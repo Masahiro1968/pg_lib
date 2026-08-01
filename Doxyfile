@@ -1,0 +1,89 @@
+# ==============================================================================
+# Doxyfile for pg_lib (Doxygen 1.12.0)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Project related configuration options
+# ------------------------------------------------------------------------------
+PROJECT_NAME           = "pg_lib"
+PROJECT_NUMBER         = "0.1.0"
+PROJECT_BRIEF          = "PostgreSQL (libpq) Wrapper Library for C"
+OUTPUT_DIRECTORY       = "docs"
+OUTPUT_LANGUAGE        = Japanese
+ALWAYS_DETAILED_SEC    = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+TYPEDEF_HIDES_STRUCT   = YES
+
+# ------------------------------------------------------------------------------
+# Build related configuration options
+# ------------------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+INTERNAL_DOCS          = YES
+
+# ------------------------------------------------------------------------------
+# Configuration options related to warning and progress messages
+# ------------------------------------------------------------------------------
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+
+# ------------------------------------------------------------------------------
+# Configuration options related to the input source files
+# ------------------------------------------------------------------------------
+# ソースおよびヘッダーの検索パス
+INPUT                  = README.md \
+                         include \
+                         src \
+                         utilities \
+                         sample
+
+# 対象とする拡張子
+FILE_PATTERNS          = *.c \
+                         *.h
+
+# サブディレクトリを再帰的に探す（include/pg_lib や include/pg_util を読み込むため）
+RECURSIVE              = YES
+
+# サンプルコードの検索パス（\example や \file としてサンプルを取り込むため）
+EXAMPLE_PATH           = sample
+EXAMPLE_PATTERNS       = *.c
+EXAMPLE_RECURSIVE      = NO
+
+# ------------------------------------------------------------------------------
+# Configuration options related to the HTML output
+# ------------------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE        = LIGHT
+HTML_DYNAMIC_MENUS     = YES
+GENERATE_TREEVIEW      = YES
+
+# ------------------------------------------------------------------------------
+# Configuration options related to the LaTeX / PDF output
+# ------------------------------------------------------------------------------
+# HTMLのみ生成し、PDF(LaTeX)の生成はオフにする場合
+GENERATE_LATEX         = NO
+
+# ------------------------------------------------------------------------------
+# Configuration options related to source browsing & Preprocessor
+# ------------------------------------------------------------------------------
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+
+# ------------------------------------------------------------------------------
+# My option
+# ------------------------------------------------------------------------------
+USE_MDFILE_AS_MAINPAGE = "./README.md"
