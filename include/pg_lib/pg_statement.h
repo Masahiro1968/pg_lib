@@ -19,7 +19,6 @@ typedef struct
 {
     PGContext *ctx;  ///< PGContext情報
     char name[64];   ///< ステートメント名
-    int param_count; ///< パラメータ件数
 } PGStmt;
 
 /**

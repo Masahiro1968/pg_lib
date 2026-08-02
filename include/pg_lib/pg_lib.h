@@ -25,7 +25,6 @@ typedef struct
 {
     PGconn *conn; ///< Postgres接続情報
 
-    int last_error_code;   ///< 最後に発生したエラーコード
     char last_sqlstate[6]; ///< PQresultErrorField(res, PG_DIAG_SQLSTATE)
     char last_error[1024]; ///< PQerrorMessage(ctx->conn)を格納
     char last_sql[1024];   ///< 最後に実行したSQL文字列
