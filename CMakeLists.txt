@@ -38,10 +38,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #
 # Options
 #
-option(PG_LIB_BUILD_SAMPLES   "Build sample programs" ON)
-option(PG_LIB_BUILD_UTILITIES "Build utilities"       ON)
+option(PG_LIB_BUILD_SAMPLES    "Build sample programs"       ON)
+option(PG_LIB_BUILD_UTILITIES  "Build utilities"             ON)
 option(PG_LIB_ENABLE_SANITIZER "Enable Address/UB Sanitizer" ON)
-option(PG_LIB_WERROR "Treat warnings as errors" ON)
+option(PG_LIB_WERROR           "Treat warnings as errors"    ON)
+option(PG_LIB_USE_OPENMP       "Use OpenMP for Sample"       ON)
 
 #
 # Find PostgreSQL
@@ -108,6 +109,15 @@ if(PG_LIB_WERROR)
         pg_lib
         PRIVATE
             -Werror
+    )
+endif()
+
+if(PG_LIB_USE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    target_compile_options(
+        pg_lib
+        PRIVATE
+            -fopenmp
     )
 endif()
 
@@ -196,6 +206,14 @@ if(PG_LIB_BUILD_SAMPLES)
             PRIVATE
                 pg_lib pg_util
         )
+
+        if(PG_LIB_USE_OPENMP)
+            target_link_libraries(
+                ${SAMPLE_NAME}
+                PRIVATE
+                    OpenMP::OpenMP_C
+            )
+        endif()
 
     endforeach()
 

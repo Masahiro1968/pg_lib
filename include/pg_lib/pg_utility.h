@@ -57,6 +57,7 @@ int pg_datetime_parse(const char *src, PGDateTime *dst);
  * @brief     テーブル一覧を取得します。
  * @param[in] ctx PGcontext
  * @return    PGresult
+ * @details   'tablename'でテーブル名を返却します。
  */
 PGresult *pg_tables(PGContext *ctx);
 
