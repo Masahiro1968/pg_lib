@@ -43,7 +43,7 @@ void pg_log_set_level(PGLogLevel aboveLogLevel);
 void pg_log_set_stream(FILE *fp);
 
 /**
- * @brief ログを出力します。
+ * @brief     ログを出力します。
  * @param[in] level 出力するログレベル
  * @param[in] fmt   出力文字のフォーマット
  * @param[in] ...   可変引数の出力内容

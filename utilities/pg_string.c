@@ -7,6 +7,7 @@
  *   - 文字列操作に関する構造体や関数を集約します。
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "pg_string.h"
@@ -17,7 +18,9 @@ PGString *pg_string_new(size_t size)
     if (!v)
         return NULL;
 
-    v->data = malloc(size + 1); // ヌル終端分を確保
+    const size_t reserve = size + 1; // ヌル終端分を確保
+
+    v->data = malloc(reserve);
     if (!v->data)
     {
         free(v);
@@ -26,8 +29,28 @@ PGString *pg_string_new(size_t size)
 
     v->data[0] = '\0';
     v->size = 0;
+    v->capacity = reserve;
 
     return v;
+}
+
+int pg_string_reserve(PGString *string, size_t capacity)
+{
+    if (!string)
+        return -1;
+
+    if (capacity <= string->capacity)
+        return 0;
+
+    char *data = realloc(string->data, capacity);
+
+    if (!data)
+        return -1;
+
+    string->data = data;
+    string->capacity = capacity;
+
+    return 0;
 }
 
 void pg_string_free(PGString *string)
@@ -46,18 +69,43 @@ int pg_string_set(PGString *string, const char *text)
 
     size_t len = strlen(text);
 
-    char *newdata = malloc(len + 1);
-    if (!newdata)
+    if (pg_string_reserve(string, len + 1) != 0)
         return -1;
 
-    memcpy(newdata, text, len);
-    newdata[len] = '\0';
+    memcpy(string->data, text, len + 1);
 
-    free(string->data);
-    string->data = newdata;
     string->size = len;
 
-    return len;
+    return (int)len;
+}
+
+int pg_string_format(PGString *string, const char *format, ...)
+{
+    if (!string || !format)
+        return -1;
+
+    va_list ap;
+
+    va_start(ap, format);
+    int size = vsnprintf(NULL, 0, format, ap);
+    va_end(ap);
+
+    if (size < 0)
+        return -1;
+
+    if (pg_string_reserve(string, (size_t)size + 1) != 0)
+        return -1;
+
+    va_start(ap, format);
+    int ret = vsnprintf(string->data, string->capacity, format, ap);
+    va_end(ap);
+
+    if (ret < 0)
+        return -1;
+
+    string->size = (size_t)ret;
+
+    return ret;
 }
 
 const char *pg_string_get(PGString *string)
@@ -78,21 +126,22 @@ int pg_string_size(PGString *string)
 
 int pg_string_join(PGString *base, PGString *append)
 {
-    size_t new_size = base->size + append->size;
-
-    char *newdata = malloc(new_size + 1);
-    if (!newdata)
+    if (!base || !append)
         return -1;
 
-    memcpy(newdata, base->data, base->size);
-    memcpy(newdata + base->size, append->data, append->size);
-    newdata[new_size] = '\0';
+    size_t new_size = base->size + append->size;
 
-    free(base->data);
-    base->data = newdata;
+    if (pg_string_reserve(base, new_size + 1) != 0)
+        return -1;
+
+    memcpy(
+        base->data + base->size,
+        append->data,
+        append->size + 1);
+
     base->size = new_size;
 
-    return new_size;
+    return (int)new_size;
 }
 
 void pg_string_trim_left(PGString *string)
@@ -134,9 +183,9 @@ void pg_string_trim(PGString *string)
     pg_string_trim_left(string);
 }
 
-PGStringList pg_string_split(PGString *s, char delimiter)
+PGStringList *pg_string_split(PGString *s, char delimiter)
 {
-    PGStringList list = {0};
+    PGStringList *list = pg_string_list_new();
     size_t start = 0;
 
     // UNIX パスの先頭 "/" を無視する
@@ -154,13 +203,21 @@ PGStringList pg_string_split(PGString *s, char delimiter)
             part->data[len] = '\0';
             part->size = len;
 
-            list.items = realloc(list.items, sizeof(PGString *) * (list.count + 1));
-            list.items[list.count++] = part;
+            list->items = realloc(list->items, sizeof(PGString *) * (list->count + 1));
+            list->items[list->count++] = part;
             start = i + 1;
         }
     }
 
     return list;
+}
+
+PGStringList *pg_string_list_new()
+{
+    PGStringList *response = malloc(sizeof(PGStringList));
+    response->count = 0;
+    response->items = NULL;
+    return response;
 }
 
 void pg_string_list_free(PGStringList *list)
@@ -171,6 +228,7 @@ void pg_string_list_free(PGStringList *list)
     free(list->items);
     list->items = NULL;
     list->count = 0;
+    free(list);
 }
 
 int pg_string_find(PGString *string, const char *needle)
@@ -216,4 +274,38 @@ int pg_string_replace(PGString *string, const char *from, const char *to)
     string->size = new_size;
 
     return pos;
+}
+
+int pg_string_list_size(PGStringList *list)
+{
+    if (!list)
+        return -1;
+
+    return list->count;
+}
+
+PGString *pg_string_list_get(PGStringList *list, int count)
+{
+    if (!list || count > list->count)
+        return NULL;
+
+    return list->items[count];
+}
+
+int pg_string_list_add(PGStringList *list, PGString *string)
+{
+    if (!list || !string)
+        return 0;
+
+    PGString **items = realloc(
+        list->items,
+        sizeof(PGString *) * (list->count + 1));
+
+    if (!items)
+        return 0;
+
+    list->items = items;
+    list->items[list->count++] = string;
+
+    return 1;
 }

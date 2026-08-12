@@ -22,20 +22,20 @@ typedef struct
 } PGStmt;
 
 /**
- * @brief          SQLの事前実行情報を設定します
+ * @brief     SQLの事前実行情報を設定します
  * @param[in] ctx  PGContext
- * @param[in] name 事前実行上に設定する名称
+ * @param[in] name 事前実行上に設定する名称(64bytes)
  * @param[in] sql  事前実行させるSQL
- * @return         PGStmt
+ * @return    PGStmt
  */
 PGStmt *pg_prepare(PGContext *ctx, const char *name, const char *sql);
 
 /**
- * @brief             SQLの事前実行情報を元にSQLを実行する
+ * @brief     SQLの事前実行情報を元にSQLを実行する
  * @param[in] stmt    PGStmt
  * @param[in] nparams パラメータの件数
  * @param[in] params  パラメータ
- * @return            PGresult
+ * @return    PGresult
  */
 PGresult *pg_execute(PGStmt *stmt, int nparams, const char **params);
 

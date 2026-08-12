@@ -165,6 +165,7 @@ if(PG_LIB_BUILD_UTILITIES)
     target_include_directories(
         pg_util
         PUBLIC
+            ${PG_LIB_INCLUDES}
             ${PG_UTIL_INCLUDES}
     )
 

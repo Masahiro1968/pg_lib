@@ -70,10 +70,10 @@ void pg_disconnect(PGContext *ctx);
 bool pg_exec(PGContext *ctx, const char *sql);
 
 /**
- * @brief         SELECTを実行します。
+ * @brief     SELECTを実行します。
  * @param[in] ctx PGContext
  * @param[in] sql 実行するSQL
- * @return        実行結果
+ * @return    実行結果
  */
 PGresult *pg_query(PGContext *ctx, const char *sql);
 
@@ -163,12 +163,23 @@ const char *pg_error(PGContext *ctx);
 int pg_ok(PGresult *res);
 
 /**
- * @brief Postgresへの接続状況を確認します。
+ * @brief     Postgresへの接続状況を確認します。
  * @param[in] ctx PGContext
  * @return    実行結果
  * @retval    1 成功
  * @retval    0 失敗
  */
 int pg_connected(PGContext *ctx);
+
+/**
+ * @brief     NULLデータの判定をします。
+ * @param[in] res PGresult
+ * @param[in] row 行番号
+ * @param[in] col 列番号
+ * @return    実行結果
+ * @retval    true NULLデータ
+ * @retval    false データあり
+ */
+bool pg_is_null(PGresult *res, int row, int col);
 
 #endif

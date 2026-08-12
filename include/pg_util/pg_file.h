@@ -22,8 +22,8 @@
  * @brief     ファイルの存在を確認します。
  * @param[in] file_name 存在可否を確認するファイル名
  * @return    実行結果
- * @retval    true: ファイルは存在します。
- * @retval    false: ファイルは存在しません。
+ * @retval    true ファイルは存在します。
+ * @retval    false ファイルは存在しません。
  * @details   ファイルの確認用で、ディレクトリの場合は
  *            is_exist_directory()を使用します。
  */
@@ -106,7 +106,7 @@ bool create_directory(const char *directory_name);
 bool copy_directory(const char *directory_name, const char *target_directory_name);
 
 /**
- * @brief ディレクトリを移動します。
+ * @brief     ディレクトリを移動します。
  * @param[in] directory_name 移動するディレクトリ名
  * @param[in] target_directory_name 移動先のディレクトリ名
  * @return    実行結果

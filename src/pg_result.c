@@ -47,7 +47,7 @@ void pg_result_free(PGresult *res)
         PQclear(res);
 }
 
-int pg_is_null(PGresult *res, int row, int col)
+bool pg_is_null(PGresult *res, int row, int col)
 {
-    return PQgetisnull(res, row, col);
+    return PQgetisnull(res, row, col) == 1 ? true : false;
 }

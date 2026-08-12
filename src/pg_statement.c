@@ -67,6 +67,7 @@ PGStmt *pg_prepare(PGContext *ctx, const char *name, const char *sql)
     PGresult *res = PQprepare(ctx->conn, name, sql, 0, NULL);
     if (!pg_ok(res))
     {
+        pg_error_set(ctx, sql, NULL);
         PQclear(res);
         free(stmt);
         return NULL;
@@ -83,8 +84,18 @@ PGresult *pg_execute(PGStmt *stmt, int nparams, const char **params)
 
 void pg_stmt_free(PGStmt *stmt)
 {
-    if (stmt)
-        free(stmt);
+    if (stmt == NULL)
+        return;
+    
+    char sql[256];
+    snprintf(sql, sizeof(sql),"DEALLOCATE \"%s\";", stmt->name);
+
+    if (!pg_exec(stmt->ctx, sql))
+    {
+        pg_error_set(stmt->ctx, sql, NULL);
+    }
+
+    free(stmt);
 }
 
 bool pg_open_cursor(

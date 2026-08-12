@@ -15,12 +15,48 @@
 #include <stdlib.h>
 #include <omp.h>
 #include "pg_lib.h"
+#include "pg_statement.h"
 #include "pg_utility.h"
 #include "pg_type.h"
 #include "pg_logger.h"
 #include "pg_file.h"
+#include "pg_string.h"
 
-#define USE_LOG_FILE 0
+#define USE_LOG_FILE 1
+
+const char *SQL_DROP_TABLE =
+    "DROP TABLE IF EXISTS sample_table_%05d;";
+const char *SQL_CREATE_TABLE =
+    "CREATE TABLE sample_table_%05d ("
+    "   id              INTEGER PRIMARY KEY,"
+    "   int_value       INTEGER,"
+    "   bigint_value    BIGINT,"
+    "   numeric_value   NUMERIC(8,5),"
+    "   real_value      REAL,"
+    "   double_value    DOUBLE PRECISION,"
+    "   char_value      CHAR(10),"
+    "   varchar_value   VARCHAR(100),"
+    "   text_value      TEXT,"
+    "   date_value      DATE,"
+    "   timestamp_value TIMESTAMP,"
+    "   bool_value      BOOLEAN"
+    ");";
+const char *SQL_INSERT =
+    "INSERT INTO sample_table_%05d ("
+    "id,"
+    "int_value,"
+    "bigint_value,"
+    "numeric_value,"
+    "real_value,"
+    "double_value,"
+    "char_value,"
+    "varchar_value,"
+    "text_value,"
+    "date_value,"
+    "timestamp_value,"
+    "bool_value"
+    ") VALUES ("
+    "$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);";
 
 bool create_dummy_tables(int num_of_tables, int num_of_rows)
 {
@@ -28,6 +64,8 @@ bool create_dummy_tables(int num_of_tables, int num_of_rows)
 
     bool ret = false;
     PGContext *ctx = NULL;
+    PGStmt *stmt = NULL;
+    PGresult *res = NULL;
     char *sql = NULL;
 
     ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
@@ -37,16 +75,14 @@ bool create_dummy_tables(int num_of_tables, int num_of_rows)
         goto cleanup;
     }
 
-    char *template = NULL;
     const int buffer_size = 512;
     sql = malloc(buffer_size);
     for (int i = 1; i <= num_of_tables; i++)
     {
         PG_LOG_DEBUG("Making No.%d", i);
 
-        template = "DROP TABLE IF EXISTS sample_table_%05d;";
-        snprintf(sql, buffer_size, template, i);
-        // PG_LOG_INFO("SQL=%s", sql);
+        snprintf(sql, buffer_size, SQL_DROP_TABLE, i);
+        PG_LOG_INFO("SQL=%s", sql);
         ret = pg_exec(ctx, sql);
         if (!ret)
         {
@@ -54,23 +90,8 @@ bool create_dummy_tables(int num_of_tables, int num_of_rows)
             goto cleanup;
         }
 
-        template =
-            "CREATE TABLE sample_table_%05d ("
-            "   id              INTEGER PRIMARY KEY,"
-            "   int_value       INTEGER,"
-            "   bigint_value    BIGINT,"
-            "   numeric_value   NUMERIC(8,5),"
-            "   real_value      REAL,"
-            "   double_value    DOUBLE PRECISION,"
-            "   char_value      CHAR(10),"
-            "   varchar_value   VARCHAR(100),"
-            "   text_value      TEXT,"
-            "   date_value      DATE,"
-            "   timestamp_value TIMESTAMP,"
-            "   bool_value      BOOLEAN"
-            ");";
-        snprintf(sql, buffer_size, template, i);
-        // PG_LOG_INFO("SQL=%s", sql);
+        snprintf(sql, buffer_size, SQL_CREATE_TABLE, i);
+        PG_LOG_INFO("SQL=%s", sql);
         ret = pg_exec(ctx, sql);
         if (!ret)
         {
@@ -78,74 +99,119 @@ bool create_dummy_tables(int num_of_tables, int num_of_rows)
             goto cleanup;
         }
 
-        template =
-            "INSERT INTO sample_table_%05d ("
-            "id,"
-            "int_value,"
-            "bigint_value,"
-            "numeric_value,"
-            "real_value,"
-            "double_value,"
-            "char_value,"
-            "varchar_value,"
-            "text_value,"
-            "date_value,"
-            "timestamp_value,"
-            "bool_value"
-            ") VALUES ("
-            "%d,"
-            "%d,"
-            "%lld,"
-            "%.5f,"
-            "%.2f,"
-            "%.10f,"
-            "'C%02d',"
-            "'VARCHAR-%03d',"
-            "'TEXT-%03d',"
-            "'2026-07-%02d',"
-            "'2026-07-%02d %02d:%02d:%02d',"
-            "%s"
-            ");";
+        snprintf(sql, buffer_size, SQL_INSERT, i);
+        PG_LOG_INFO("SQL=%s", sql);
+        stmt = pg_prepare(ctx, "insert data", sql);
+        if (!stmt)
+        {
+            PG_LOG_ERROR(pg_error(ctx));
+            ret = false;
+            goto cleanup2;
+        }
+
         for (int j = 1; j <= num_of_rows; j++)
         {
-            snprintf(
-                sql,
-                buffer_size,
-                template,
-                i,                         /* table_name_index */
-                j,                         /* id */
-                j * 10,                    /* int_value */
-                (long long)j * 1000000LL,  /* bigint_value */
-                j * 0.12345,               /* numeric_value */
-                j * 1.25f,                 /* real_value */
-                j * 123.456789,            /* double_value */
-                j,                         /* char_value */
-                j,                         /* varchar_value */
-                j,                         /* text_value */
-                (j % 28) + 1,              /* date_value */
-                (j % 28) + 1,              /* timestamp day */
-                j % 24,                    /* hour */
-                j % 60,                    /* minute */
-                (j * 3) % 60,              /* second */
-                (j % 2) ? "TRUE" : "FALSE" /* bool_value */
-            );
-            // PG_LOG_INFO("SQL=%s", sql);
+            PG_LOG_DEBUG("Making Row %d.", j);
 
-            ret = pg_exec(ctx, sql);
-            if (!ret)
+            char id_value[32];
+            char int_value[32];
+            char bigint_value[32];
+            char numeric_value[32];
+            char real_value[32];
+            char double_value[32];
+            char char_value[32];
+            char varchar_value[32];
+            char text_value[32];
+            char date_value[32];
+            char timestamp_value[32];
+            char bool_value[8];
+            const char *param[12];
+
+            snprintf(id_value, sizeof(id_value), "%d", j);
+            snprintf(int_value, sizeof(int_value), "%d", j);
+            snprintf(bigint_value, sizeof(bigint_value), "%lld", (long long)j * 1000000LL);
+            snprintf(numeric_value, sizeof(numeric_value), "%.5f", j * 0.12345);
+            snprintf(real_value, sizeof(real_value), "%.2f", j * 1.25f);
+            snprintf(double_value, sizeof(double_value), "%.10f", j * 123.456789);
+            snprintf(char_value, sizeof(char_value), "C%04d", j);
+            snprintf(varchar_value, sizeof(varchar_value), "VARCHAR-%04d", j);
+            snprintf(text_value, sizeof(text_value), "TEXT-%04d", j);
+            snprintf(date_value, sizeof(date_value), "2026-07-%02d", (j % 28) + 1);
+            snprintf(timestamp_value, sizeof(timestamp_value), "2026-07-%02d %02d:%02d:%02d",
+                     (j % 28) + 1, j % 24, j % 60, (j * 3) % 60);
+            snprintf(bool_value, sizeof(bool_value), "%s", (j % 2) ? "TRUE" : "FALSE");
+
+            param[0] = id_value;
+
+            if (j % 7 != 0)
+            {
+                param[1] = int_value;
+                param[2] = bigint_value;
+                param[3] = numeric_value;
+                param[4] = real_value;
+                param[5] = double_value;
+            }
+            else
+            {
+                param[1] = NULL;
+                param[2] = NULL;
+                param[3] = NULL;
+                param[4] = NULL;
+                param[5] = NULL;
+            }
+
+            if (j % 8 != 0)
+            {
+                param[6] = char_value;
+                param[7] = varchar_value;
+                param[8] = text_value;
+            }
+            else
+            {
+                param[6] = NULL;
+                param[7] = NULL;
+                param[8] = NULL;
+            }
+
+            if (j % 9 != 0)
+            {
+                param[9] = date_value;
+                param[10] = timestamp_value;
+                param[11] = bool_value;
+            }
+            else
+            {
+                param[9] = NULL;
+                param[10] = NULL;
+                param[11] = NULL;
+            }
+
+            res = pg_execute(stmt, 12, param);
+            if (!pg_ok(res))
             {
                 PG_LOG_ERROR(pg_error(ctx));
-                goto cleanup;
+                ret = false;
+                goto cleanup3;
             }
+            pg_result_free(res);
         }
+
+        pg_stmt_free(stmt);
     }
 
-    free(sql);
-
     ret = true;
+    goto cleanup;
+
+cleanup3:
+    pg_result_free(res);
+
+cleanup2:
+    pg_stmt_free(stmt);
 
 cleanup:
     pg_disconnect(ctx);
+
+    free(sql);
 
     PG_LOG_DEBUG("end create_dummy_tables()");
     return ret;
@@ -190,44 +256,32 @@ void dump_table(const char *table_name)
     }
     else
     {
+        const char *delimiter = "\t";
+        const char *blacket = "'";
+        const char *eol = "\n";
+        PGStringList *field_name_list = pg_get_field_names(res);
+        PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol);
+        fputs(pg_string_get(field_names), fp);
+        pg_string_free(field_names);
+        pg_string_list_free(field_name_list);
+
         for (int row = 0; row < pg_rows(res); row++)
         {
-            char line[4096];
-            int pos = 0;
-
-            for (int col = 0; col < pg_cols(res); col++)
-            {
-                int n = snprintf(
-                    line + pos,
-                    sizeof(line) - pos,
-                    col == 0 ? "'%s'" : ",'%s'",
-                    pg_value(res, row, col));
-
-                if (n < 0 || (size_t)n >= sizeof(line) - pos)
-                {
-                    PG_LOG_ERROR("CSV line is too long.");
-                    break;
-                }
-
-                pos += n;
-            }
-
-            if (pos < sizeof(line) - 1)
-                line[pos++] = '\n';
-
-            line[pos] = '\0';
-
-            // PG_LOG_INFO("%s", line);
-            fputs(line, fp);
+            PGStringList *field_data_list = pg_get_row(res, row);
+            PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol);
+            fputs(pg_string_get(field_data), fp);
+            pg_string_free(field_data);
+            pg_string_list_free(field_data_list);
         }
     }
 
-    free(sql);
-
 cleanup2:
     pg_result_free(res);
+
 cleanup1:
     pg_disconnect(ctx);
+
+    free(sql);
 
     fclose(fp);
 
@@ -253,11 +307,13 @@ int main(void)
     PGresult *res = NULL;
     char *sql = NULL;
 
-    bool ret = create_dummy_tables(1000, 100);
+#ifdef MAKE_DATA
+    bool ret = create_dummy_tables(2000, 1000);
     if (!ret)
     {
         return -1;
     }
+#endif
 
     ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
     if (!pg_connected(ctx))
@@ -289,8 +345,9 @@ int main(void)
             {
                 PG_LOG_INFO("OpenMP threads = %d", omp_get_num_threads());
             }
-            
-            #pragma omp for
+
+            // #pragma omp for
+            #pragma omp for schedule(dynamic, 1)
             for (int i = 0; i < table_count; i++)
             {
                 dump_table(table_names[i]);

@@ -19,7 +19,7 @@
 void pg_error_clear(PGContext *ctx);
 
 /**
- * @brief         エラー情報を設定します。
+ * @brief     エラー情報を設定します。
  * @param[in] ctx PGContext
  * @param[in] sql 実行したSQL
  * @param[in] res PGresult

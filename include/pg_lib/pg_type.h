@@ -47,8 +47,8 @@ typedef enum
 typedef struct
 {
     PGDataType type; ///< PGDataType変数
-    void *addr;      ///< 変換後に格納される列名
-    size_t size;     ///< 格納された列名のサイズ
+    void *addr;      ///< 変換後に格納されるデータ
+    size_t size;     ///< 格納されたデータのサイズ
 
 } PGField;
 
