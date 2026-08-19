@@ -56,19 +56,19 @@ int pg_string_reserve(PGString *string, size_t capacity);
 void pg_string_free(PGString *string);
 
 /**
- * @brief     文字列を文字列情報に設定します。
- * @param[in] string PGString 文字列を設定する対象
- * @param[in] text 設定する文字列
- * @return    設定された文字列サイズ
+ * @brief      文字列を文字列情報に設定します。
+ * @param[out] string PGString 文字列を設定する対象
+ * @param[in]  text 設定する文字列
+ * @return     設定された文字列サイズ
  */
 int pg_string_set(PGString *string, const char *text);
 
 /**
- * @brief     文字列情報をフォーマットで構築します。
- * @param[in] string PGString 文字列を構築する対象
- * @param[in] format printf()に準拠したフォーマット文字列
- * @return    実際に構築された文字列長
- * @retval    -1 失敗
+ * @brief      文字列情報をフォーマットで構築します。
+ * @param[out] string PGString 文字列を構築する対象
+ * @param[in]  format printf()に準拠したフォーマット文字列
+ * @return     実際に構築された文字列長
+ * @retval     -1 失敗
  */
 int pg_string_format(PGString *string, const char *format, ...);
 
@@ -87,30 +87,36 @@ const char *pg_string_get(PGString *string);
 int pg_string_size(PGString *string);
 
 /**
- * @brief     文字列情報を連結します。
- * @param[in] base_string PGString 元になる文字列情報
- * @param[in] append_string PGString 追加する文字列情報
- * @return    base_stringの文字列サイズ
+ * @brief         文字列情報を連結します。
+ * @param[in,out] base_string PGString 元になる文字列情報
+ * @param[in]     append_string PGString 追加する文字列情報
+ * @return        base_stringの文字列サイズ
  */
 int pg_string_join(PGString *base_string, PGString *append_string);
 
 /**
- * @brief     文字列の左側の余白を削除します。
- * @param[in] string PGString 余白を削除する対象
+ * @brief         文字列の左側の余白を削除します。
+ * @param[in,out] string PGString 余白を削除する対象
  */
 void pg_string_trim_left(PGString *string);
 
 /**
- * @brief     文字列の右側の余白を削除します。
- * @param[in] string PGString 余白を削除する対象
+ * @brief         文字列の右側の余白を削除します。
+ * @param[in,out] string PGString 余白を削除する対象
  */
 void pg_string_trim_right(PGString *string);
 
 /**
- * @brief     文字列の左右の余白を削除します。
- * @param[in] string PGString 余白を削除する対象
+ * @brief         文字列の左右の余白を削除します。
+ * @param[in,out] string PGString 余白を削除する対象
  */
 void pg_string_trim(PGString *string);
+
+/**
+ * @brief         小数点以下の数字に０が続く場合に削除します。
+ * @param[in,out] string PGString 浮動小数点の文字列
+ */
+void pg_string_trim_trailing_zeros(PGString *string);
 
 /**
  * @brief     文字列情報の文字列の中から、デリミタを検出して配列に分割します。
@@ -141,11 +147,11 @@ void pg_string_list_free(PGStringList *list);
 int pg_string_find(PGString *string, const char *needle);
 
 /**
- * @brief     文字列情報から文字列を置換します。
- * @param[in] string PGString 文字列を置換する対象
- * @param[in] from 検索文字列
- * @param[in] to 置換文字列
- * @return    置換後のstringのサイズ
+ * @brief         文字列情報から文字列を置換します。
+ * @param[in,out] string PGString 文字列を置換する対象
+ * @param[in]     from 検索文字列
+ * @param[in]     to 置換文字列
+ * @return        置換後のstringのサイズ
  */
 int pg_string_replace(PGString *string, const char *from, const char *to);
 

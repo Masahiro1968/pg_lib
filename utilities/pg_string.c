@@ -183,6 +183,27 @@ void pg_string_trim(PGString *string)
     pg_string_trim_left(string);
 }
 
+void pg_string_trim_trailing_zeros(PGString *string)
+{
+    // 小数点が含まれている場合のみ処理（"1000" などの整数を削らないため）
+    if (strchr(string->data, '.') != NULL)
+    {
+        // 末尾から '0' を削る
+        while (string->size > 0 && string->data[string->size - 1] == '0')
+        {
+            string->size--;
+        }
+        
+        // '0' を削った結果、末尾が '.' になったら '.' も削る ("1." -> "1")
+        if (string->size > 0 && string->data[string->size - 1] == '.')
+        {
+            string->size--;
+        }
+
+        string->data[string->size] = '\0'; // 終端文字を打つ
+    }
+}
+
 PGStringList *pg_string_split(PGString *s, char delimiter)
 {
     PGStringList *list = pg_string_list_new();

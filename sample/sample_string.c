@@ -110,6 +110,27 @@ void sample05()
     pg_string_list_free(string_list);
 }
 
+void sample06()
+{
+    PGString *value1 = pg_string_new(8);
+    PGString *value2 = pg_string_new(8);
+
+    pg_string_format(value1, "%2.4f", 1.2); // 1.2000
+    pg_string_format(value2, "%d", 1200);   // 1200
+
+    PG_LOG_INFO("value1:%s", pg_string_get(value1));
+    PG_LOG_INFO("value2:%s", pg_string_get(value2));
+
+    pg_string_trim_trailing_zeros(value1);
+    pg_string_trim_trailing_zeros(value2);
+
+    PG_LOG_INFO("value1:%s", pg_string_get(value1));
+    PG_LOG_INFO("value2:%s", pg_string_get(value2));
+
+    pg_string_free(value1);
+    pg_string_free(value2);
+}
+
 int main(int argc, char **argv)
 {
     pg_log_set_level(PG_LEVEL_DEBUG);
@@ -119,4 +140,5 @@ int main(int argc, char **argv)
     sample03();
     sample04();
     sample05();
+    sample06();
 }
