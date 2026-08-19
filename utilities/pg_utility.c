@@ -49,10 +49,15 @@ int pg_connected(PGContext *ctx)
     return PQstatus(ctx->conn) == CONNECTION_OK;
 }
 
-PGresult *pg_tables(PGContext *ctx)
+PGresult *pg_tables(PGContext *ctx, const char *schema_name)
 {
-    return PQexec(
-        ctx->conn, "select tablename from pg_tables where schemaname='public'");
+    char sql[128];
+
+    snprintf(
+        sql, sizeof(sql),
+        "select tablename from pg_tables where schemaname='%s'",
+        (schema_name ? schema_name : "public"));
+    return PQexec(ctx->conn, sql);
 }
 
 PGStringList *pg_get_row(PGresult *res, int row)

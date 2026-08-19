@@ -57,10 +57,12 @@ int pg_datetime_parse(const char *src, PGDateTime *dst);
 /**
  * @brief     テーブル一覧を取得します。
  * @param[in] ctx PGcontext
+ * @param[in] schema_name 対象のスキーマ名
  * @return    PGresult
- * @details   'tablename'でテーブル名を返却します。
+ * @details   'tablename'でテーブル名を返却します。<br>
+ *            schema_nameがNULLの場合、"public"を検索します。
  */
-PGresult *pg_tables(PGContext *ctx);
+PGresult *pg_tables(PGContext *ctx, const char *schema_name);
 
 /**
  * @brief     テーブルから１行単位でデータを取得します。

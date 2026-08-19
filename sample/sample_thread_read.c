@@ -24,8 +24,13 @@
 
 #define USE_LOG_FILE 1
 
-const char *SQL_DROP_TABLE =
-    "DROP TABLE IF EXISTS sample_table_%05d;";
+const char *CONNECTION_STRING =
+    "host=localhost dbname=testdb user=postgres password=postgres";
+const char *SCHEMA_NAME = "sample_schema";
+const char *SQL_DROP_SCHEMA =
+    "DROP SCHEMA IF EXISTS %s CASCADE;";
+const char *SQL_CREATE_SCHEMA =
+    "CREATE SCHEMA %s;";
 const char *SQL_CREATE_TABLE =
     "CREATE TABLE sample_table_%05d ("
     "   id              INTEGER PRIMARY KEY,"
@@ -58,7 +63,7 @@ const char *SQL_INSERT =
     ") VALUES ("
     "$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);";
 
-bool create_dummy_tables(int num_of_tables, int num_of_rows)
+bool create_dummy_tables(const char *schema_name, int num_of_tables, int num_of_rows)
 {
     PG_LOG_DEBUG("begin create_dummy_tables(%d,%d)", num_of_tables, num_of_rows);
 
@@ -68,7 +73,7 @@ bool create_dummy_tables(int num_of_tables, int num_of_rows)
     PGresult *res = NULL;
     char *sql = NULL;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
@@ -77,18 +82,36 @@ bool create_dummy_tables(int num_of_tables, int num_of_rows)
 
     const int buffer_size = 512;
     sql = malloc(buffer_size);
+
+    snprintf(sql, buffer_size, SQL_DROP_SCHEMA, schema_name);
+    PG_LOG_INFO("SQL=%s", sql);
+    ret = pg_exec(ctx, sql);
+    if (!ret)
+    {
+        PG_LOG_ERROR(pg_error(ctx));
+        goto cleanup;
+    }
+
+    snprintf(sql, buffer_size, SQL_CREATE_SCHEMA, schema_name);
+    PG_LOG_INFO("SQL=%s", sql);
+    ret = pg_exec(ctx, sql);
+    if (!ret)
+    {
+        PG_LOG_ERROR(pg_error(ctx));
+        goto cleanup;
+    }
+
+    snprintf(sql, buffer_size, "SET search_path TO %s;", schema_name);
+    ret = pg_exec(ctx, sql);
+    if (!ret)
+    {
+        PG_LOG_ERROR(pg_error(ctx));
+        goto cleanup;
+    }
+
     for (int i = 1; i <= num_of_tables; i++)
     {
         PG_LOG_DEBUG("Making No.%d", i);
-
-        snprintf(sql, buffer_size, SQL_DROP_TABLE, i);
-        PG_LOG_INFO("SQL=%s", sql);
-        ret = pg_exec(ctx, sql);
-        if (!ret)
-        {
-            PG_LOG_ERROR(pg_error(ctx));
-            goto cleanup;
-        }
 
         snprintf(sql, buffer_size, SQL_CREATE_TABLE, i);
         PG_LOG_INFO("SQL=%s", sql);
@@ -217,7 +240,7 @@ cleanup:
     return ret;
 }
 
-void dump_table(const char *table_name)
+void dump_table(const char *schema_name, const char *table_name)
 {
     int thread_no = omp_get_thread_num();
     PG_LOG_DEBUG("begin[%d] dump_table(%s)", thread_no, table_name);
@@ -235,17 +258,27 @@ void dump_table(const char *table_name)
     PGresult *res = NULL;
     char *sql = NULL;
     char *template = NULL;
+    bool ret;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
         goto cleanup1;
     }
 
-    template = "SELECT * FROM %s;";
     const int buffer_size = 512;
     sql = malloc(buffer_size);
+
+    snprintf(sql, buffer_size, "SET search_path TO %s;", schema_name);
+    ret = pg_exec(ctx, sql);
+    if (!ret)
+    {
+        PG_LOG_ERROR(pg_error(ctx));
+        goto cleanup1;
+    }
+
+    template = "SELECT * FROM %s;";
     snprintf(sql, buffer_size, template, table_name);
     PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
     res = pg_query(ctx, sql);
@@ -256,8 +289,8 @@ void dump_table(const char *table_name)
     }
     else
     {
-        const char *delimiter = "\t";
-        const char *blacket = "'";
+        const char *delimiter = ",";
+        const char *blacket = "\"";
         const char *eol = "\n";
         PGStringList *field_name_list = pg_get_field_names(res);
         PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol);
@@ -307,22 +340,22 @@ int main(void)
     PGresult *res = NULL;
     char *sql = NULL;
 
-#ifdef MAKE_DATA
-    bool ret = create_dummy_tables(2000, 1000);
+#ifndef MAKE_DATA
+    bool ret = create_dummy_tables(SCHEMA_NAME, 20, 10);
     if (!ret)
     {
         return -1;
     }
 #endif
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
         goto cleanup1;
     }
 
-    res = pg_tables(ctx);
+    res = pg_tables(ctx, SCHEMA_NAME);
     if (!pg_ok(res))
     {
         PG_LOG_ERROR(pg_error(ctx));
@@ -339,18 +372,18 @@ int main(void)
             PG_LOG_DEBUG("search table %d:%s", i, table_names[i]);
         }
 
-        #pragma omp parallel
+#pragma omp parallel
         {
-            #pragma omp single
+#pragma omp single
             {
                 PG_LOG_INFO("OpenMP threads = %d", omp_get_num_threads());
             }
 
-            // #pragma omp for
-            #pragma omp for schedule(dynamic, 1)
+// #pragma omp for
+#pragma omp for schedule(dynamic, 1)
             for (int i = 0; i < table_count; i++)
             {
-                dump_table(table_names[i]);
+                dump_table(SCHEMA_NAME, table_names[i]);
             }
         }
 
