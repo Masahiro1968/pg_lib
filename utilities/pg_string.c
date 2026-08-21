@@ -294,7 +294,7 @@ int pg_string_replace(PGString *string, const char *from, const char *to)
     string->data = newdata;
     string->size = new_size;
 
-    return pos;
+    return string->size;
 }
 
 int pg_string_list_size(PGStringList *list)
@@ -328,5 +328,5 @@ int pg_string_list_add(PGStringList *list, PGString *string)
     list->items = items;
     list->items[list->count++] = string;
 
-    return 1;
+    return list->count;
 }

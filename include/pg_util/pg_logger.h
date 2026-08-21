@@ -31,10 +31,10 @@ typedef enum
 
 /**
  * @brief     エラーの出力レベルを設定します。
- * @param[in] aboveLogLevel 出力制限レベル
- * @details   aboveLogLevel以上を出力対象に設定します。
+ * @param[in] above_log_level 出力制限レベル
+ * @details   above_log_level以上を出力対象に設定します。
  */
-void pg_log_set_level(PGLogLevel aboveLogLevel);
+void pg_log_set_level(PGLogLevel above_log_level);
 
 /**
  * @brief     ログの出力先を設定します。

@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include <omp.h>
 #include "pg_lib.h"
 #include "pg_statement.h"
@@ -22,231 +23,25 @@
 #include "pg_file.h"
 #include "pg_string.h"
 
-#define USE_LOG_FILE 1
+#define USE_LOG_FILE 0
 
-const char *CONNECTION_STRING =
-    "host=localhost dbname=testdb user=postgres password=postgres";
-const char *SCHEMA_NAME = "sample_schema";
-const char *SQL_DROP_SCHEMA =
-    "DROP SCHEMA IF EXISTS %s CASCADE;";
-const char *SQL_CREATE_SCHEMA =
-    "CREATE SCHEMA %s;";
-const char *SQL_CREATE_TABLE =
-    "CREATE TABLE sample_table_%05d ("
-    "   id              INTEGER PRIMARY KEY,"
-    "   int_value       INTEGER,"
-    "   bigint_value    BIGINT,"
-    "   numeric_value   NUMERIC(8,5),"
-    "   real_value      REAL,"
-    "   double_value    DOUBLE PRECISION,"
-    "   char_value      CHAR(10),"
-    "   varchar_value   VARCHAR(100),"
-    "   text_value      TEXT,"
-    "   date_value      DATE,"
-    "   timestamp_value TIMESTAMP,"
-    "   bool_value      BOOLEAN"
-    ");";
-const char *SQL_INSERT =
-    "INSERT INTO sample_table_%05d ("
-    "id,"
-    "int_value,"
-    "bigint_value,"
-    "numeric_value,"
-    "real_value,"
-    "double_value,"
-    "char_value,"
-    "varchar_value,"
-    "text_value,"
-    "date_value,"
-    "timestamp_value,"
-    "bool_value"
-    ") VALUES ("
-    "$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);";
-
-bool create_dummy_tables(const char *schema_name, int num_of_tables, int num_of_rows)
-{
-    PG_LOG_DEBUG("begin create_dummy_tables(%d,%d)", num_of_tables, num_of_rows);
-
-    bool ret = false;
-    PGContext *ctx = NULL;
-    PGStmt *stmt = NULL;
-    PGresult *res = NULL;
-    char *sql = NULL;
-
-    ctx = pg_connect(CONNECTION_STRING);
-    if (!pg_connected(ctx))
-    {
-        PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup;
-    }
-
-    const int buffer_size = 512;
-    sql = malloc(buffer_size);
-
-    snprintf(sql, buffer_size, SQL_DROP_SCHEMA, schema_name);
-    PG_LOG_INFO("SQL=%s", sql);
-    ret = pg_exec(ctx, sql);
-    if (!ret)
-    {
-        PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup;
-    }
-
-    snprintf(sql, buffer_size, SQL_CREATE_SCHEMA, schema_name);
-    PG_LOG_INFO("SQL=%s", sql);
-    ret = pg_exec(ctx, sql);
-    if (!ret)
-    {
-        PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup;
-    }
-
-    snprintf(sql, buffer_size, "SET search_path TO %s;", schema_name);
-    ret = pg_exec(ctx, sql);
-    if (!ret)
-    {
-        PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup;
-    }
-
-    for (int i = 1; i <= num_of_tables; i++)
-    {
-        PG_LOG_DEBUG("Making No.%d", i);
-
-        snprintf(sql, buffer_size, SQL_CREATE_TABLE, i);
-        PG_LOG_INFO("SQL=%s", sql);
-        ret = pg_exec(ctx, sql);
-        if (!ret)
-        {
-            PG_LOG_ERROR(pg_error(ctx));
-            goto cleanup;
-        }
-
-        snprintf(sql, buffer_size, SQL_INSERT, i);
-        PG_LOG_INFO("SQL=%s", sql);
-        stmt = pg_prepare(ctx, "insert data", sql);
-        if (!stmt)
-        {
-            PG_LOG_ERROR(pg_error(ctx));
-            ret = false;
-            goto cleanup2;
-        }
-
-        for (int j = 1; j <= num_of_rows; j++)
-        {
-            PG_LOG_DEBUG("Making Row %d.", j);
-
-            char id_value[32];
-            char int_value[32];
-            char bigint_value[32];
-            char numeric_value[32];
-            char real_value[32];
-            char double_value[32];
-            char char_value[32];
-            char varchar_value[32];
-            char text_value[32];
-            char date_value[32];
-            char timestamp_value[32];
-            char bool_value[8];
-            const char *param[12];
-
-            snprintf(id_value, sizeof(id_value), "%d", j);
-            snprintf(int_value, sizeof(int_value), "%d", j);
-            snprintf(bigint_value, sizeof(bigint_value), "%lld", (long long)j * 1000000LL);
-            snprintf(numeric_value, sizeof(numeric_value), "%.5f", j * 0.12345);
-            snprintf(real_value, sizeof(real_value), "%.2f", j * 1.25f);
-            snprintf(double_value, sizeof(double_value), "%.10f", j * 123.456789);
-            snprintf(char_value, sizeof(char_value), "C%04d", j);
-            snprintf(varchar_value, sizeof(varchar_value), "VARCHAR-%04d", j);
-            snprintf(text_value, sizeof(text_value), "TEXT-%04d", j);
-            snprintf(date_value, sizeof(date_value), "2026-07-%02d", (j % 28) + 1);
-            snprintf(timestamp_value, sizeof(timestamp_value), "2026-07-%02d %02d:%02d:%02d",
-                     (j % 28) + 1, j % 24, j % 60, (j * 3) % 60);
-            snprintf(bool_value, sizeof(bool_value), "%s", (j % 2) ? "TRUE" : "FALSE");
-
-            param[0] = id_value;
-
-            if (j % 7 != 0)
-            {
-                param[1] = int_value;
-                param[2] = bigint_value;
-                param[3] = numeric_value;
-                param[4] = real_value;
-                param[5] = double_value;
-            }
-            else
-            {
-                param[1] = NULL;
-                param[2] = NULL;
-                param[3] = NULL;
-                param[4] = NULL;
-                param[5] = NULL;
-            }
-
-            if (j % 8 != 0)
-            {
-                param[6] = char_value;
-                param[7] = varchar_value;
-                param[8] = text_value;
-            }
-            else
-            {
-                param[6] = NULL;
-                param[7] = NULL;
-                param[8] = NULL;
-            }
-
-            if (j % 9 != 0)
-            {
-                param[9] = date_value;
-                param[10] = timestamp_value;
-                param[11] = bool_value;
-            }
-            else
-            {
-                param[9] = NULL;
-                param[10] = NULL;
-                param[11] = NULL;
-            }
-
-            res = pg_execute(stmt, 12, param);
-            if (!pg_ok(res))
-            {
-                PG_LOG_ERROR(pg_error(ctx));
-                ret = false;
-                goto cleanup3;
-            }
-            pg_result_free(res);
-        }
-
-        pg_stmt_free(stmt);
-    }
-
-    ret = true;
-    goto cleanup;
-
-cleanup3:
-    pg_result_free(res);
-
-cleanup2:
-    pg_stmt_free(stmt);
-
-cleanup:
-    pg_disconnect(ctx);
-
-    free(sql);
-
-    PG_LOG_DEBUG("end create_dummy_tables()");
-    return ret;
-}
-
-void dump_table(const char *schema_name, const char *table_name)
+void dump_table(
+    const char *connection_string,
+    const char *schema_name,
+    const char *table_name,
+    const char *output)
 {
     int thread_no = omp_get_thread_num();
     PG_LOG_DEBUG("begin[%d] dump_table(%s)", thread_no, table_name);
 
-    char file_name[256];
-    snprintf(file_name, sizeof(file_name), "./%s.csv", table_name);
+    bool ret;
+    char file_name[PATH_MAX];
+
+    if (output)
+        snprintf(file_name, sizeof(file_name), "%s/%s.csv", output, table_name);
+    else
+        snprintf(file_name, sizeof(file_name), "./%s.csv", table_name);
+
     FILE *fp = fopen(file_name, "w");
     if (fp == NULL)
     {
@@ -258,9 +53,8 @@ void dump_table(const char *schema_name, const char *table_name)
     PGresult *res = NULL;
     char *sql = NULL;
     char *template = NULL;
-    bool ret;
 
-    ctx = pg_connect(CONNECTION_STRING);
+    ctx = pg_connect(connection_string);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
@@ -321,7 +115,24 @@ cleanup1:
     PG_LOG_DEBUG("end dump_table()");
 }
 
-int main(void)
+void print_usage(char *argv0)
+{
+    printf("Usage:\n");
+    printf("%s <parameters>\n", argv0);
+    printf(" parameters are ...\n");
+    printf("  -H or --host    <database server name>\n");
+    printf("  -P or --port    <port number>\n");
+    printf("  -D or --dbname  <database name>\n");
+    printf("  -S or --schema  <schema name>\n");
+    printf("  -u or --user    <login user name>\n");
+    printf("  -p or --pass    <login password>\n");
+    printf("  -s or --service <service key>\n");
+    printf("  -o or --output  <output directory> default is '.'\n");
+
+    exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char **argv)
 {
 #if (USE_LOG_FILE == 1)
     const char *log_file = "./sample_thread_read.log";
@@ -332,7 +143,88 @@ int main(void)
 
     pg_log_set_level(PG_LEVEL_DEBUG);
 
+    if (argc == 1)
+        print_usage(argv[0]);
+
     PG_LOG_DEBUG("start main()");
+
+    char *host = NULL;
+    char *port = NULL;
+    char *dbname = NULL;
+    char *schema = "public";
+    char *user = NULL;
+    char *pass = NULL;
+    char *service = NULL;
+    char *output = ".";
+
+    static struct option parameters[] = {
+        {"host", required_argument, 0, 'H'},
+        {"port", required_argument, 0, 'P'},
+        {"dbname", required_argument, 0, 'D'},
+        {"schema", required_argument, 0, 'S'},
+        {"user", required_argument, 0, 'u'},
+        {"pass", required_argument, 0, 'p'},
+        {"service", required_argument, 0, 's'},
+        {"output", required_argument, 0, 'o'},
+        {0, 0, 0, 0} // EOL
+    };
+
+    int opt;
+    int option_index;
+    while ((opt = getopt_long(
+                argc, argv, "H:P:D:S:u:p:s:o", parameters, &option_index)) != -1)
+    {
+        switch (opt)
+        {
+        case 'H':
+            host = optarg;
+            break;
+        case 'P':
+            port = optarg;
+            break;
+        case 'D':
+            dbname = optarg;
+            break;
+        case 'S':
+            schema = optarg;
+            break;
+        case 'u':
+            user = optarg;
+            break;
+        case 'p':
+            pass = optarg;
+            break;
+        case 's':
+            service = optarg;
+            break;
+        case 'o':
+            output = optarg;
+            break;
+        default:
+            PG_LOG_ERROR("Invalid argment %c.", opt);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    PG_LOG_DEBUG(
+        "host=%s port=%s dbname=%s schema=%s user=%s password=%s service=%s output=%s",
+        host, port, dbname, schema, user, pass, service, output);
+
+    if (!is_exist_directory(output))
+    {
+        PG_LOG_ERROR("output '%s' is not exist.", output);
+        exit(EXIT_FAILURE);
+    }
+
+    PGString *connection = pg_string_new(PATH_MAX);
+    if (!pg_build_connection_string(connection, host, port, dbname, user, pass, service))
+    {
+        PG_LOG_ERROR("cannot build connection_string.");
+        pg_string_free(connection);
+        return EXIT_FAILURE;
+    }
+    else
+        PG_LOG_INFO("connection_string:%s", pg_string_get(connection));
 
     pg_init();
 
@@ -340,22 +232,14 @@ int main(void)
     PGresult *res = NULL;
     char *sql = NULL;
 
-#ifndef MAKE_DATA
-    bool ret = create_dummy_tables(SCHEMA_NAME, 20, 10);
-    if (!ret)
-    {
-        return -1;
-    }
-#endif
-
-    ctx = pg_connect(CONNECTION_STRING);
+    ctx = pg_connect(pg_string_get(connection));
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
         goto cleanup1;
     }
 
-    res = pg_tables(ctx, SCHEMA_NAME);
+    res = pg_tables(ctx, schema);
     if (!pg_ok(res))
     {
         PG_LOG_ERROR(pg_error(ctx));
@@ -379,11 +263,12 @@ int main(void)
                 PG_LOG_INFO("OpenMP threads = %d", omp_get_num_threads());
             }
 
-// #pragma omp for
 #pragma omp for schedule(dynamic, 1)
             for (int i = 0; i < table_count; i++)
             {
-                dump_table(SCHEMA_NAME, table_names[i]);
+                dump_table(pg_string_get(
+                               connection),
+                           schema, table_names[i], output);
             }
         }
 
@@ -396,8 +281,11 @@ int main(void)
 
 cleanup2:
     pg_result_free(res);
+
 cleanup1:
     pg_disconnect(ctx);
+
+    pg_string_free(connection);
 
     PG_LOG_DEBUG("End main()");
 

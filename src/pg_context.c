@@ -31,10 +31,10 @@ PGContext *pg_connect(const char *conninfo)
 
 void pg_disconnect(PGContext *ctx)
 {
-    pg_error_clear(ctx);
-
     if (!ctx)
         return;
+
+    pg_error_clear(ctx);
 
     if (ctx->conn)
         PQfinish(ctx->conn);

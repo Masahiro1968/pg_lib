@@ -10,11 +10,11 @@
 #include "pg_logger.h"
 
 static FILE *g_logger = NULL;
-static PGLogLevel g_suppressLogLevel = PG_LEVEL_INFO;
+static PGLogLevel g_suppress_log_level = PG_LEVEL_INFO;
 
-void pg_log_set_level(PGLogLevel aboveLogLevel)
+void pg_log_set_level(PGLogLevel above_log_level)
 {
-    g_suppressLogLevel = aboveLogLevel;
+    g_suppress_log_level = above_log_level;
 }
 
 void pg_log_set_stream(FILE *fp)
@@ -29,7 +29,7 @@ void pg_log(PGLogLevel level, const char *fmt, ...)
         g_logger = stdout;
     }
 
-    if (level < g_suppressLogLevel)
+    if (level < g_suppress_log_level)
         return;
 
     struct timespec ts;

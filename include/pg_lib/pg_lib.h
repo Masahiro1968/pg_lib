@@ -47,7 +47,7 @@ void pg_init(void);
  * @brief     Postgresに接続します。
  * @param[in] conninfo 接続文字列
  * @return    PGContext
- * @note      接続失敗でもNULLを返しません。
+ * @note      メモリ確保に失敗した場合はNULL、それ以外ではPGContextインスタンス。
  *            接続確認は、pg_connected()を使用して確認します。
  */
 PGContext *pg_connect(const char *conninfo);
@@ -73,25 +73,37 @@ bool pg_exec(PGContext *ctx, const char *sql);
  * @brief     SELECTを実行します。
  * @param[in] ctx PGContext
  * @param[in] sql 実行するSQL
- * @return    実行結果
+ * @return    PGresult
+ * @retval    NULL 失敗
+ * @retval    PGresult 成功
+ * 
  */
 PGresult *pg_query(PGContext *ctx, const char *sql);
 
 /**
  * @brief     トランザクションを開始します。
  * @param[in] ctx PGContext
+ * @return    実行結果
+ * @retval    true 成功
+ * @retval    false 失敗
  */
 bool pg_begin(PGContext *ctx);
 
 /**
  * @brief     トランザクションを確定します。
  * @param[in] ctx PGContext
+ * @return    実行結果
+ * @retval    true 成功
+ * @retval    false 失敗
  */
 bool pg_commit(PGContext *ctx);
 
 /**
  * @brief     トランザクションを破棄します。
  * @param[in] ctx PGContext
+ * @return    実行結果
+ * @retval    true 成功
+ * @retval    false 失敗
  */
 bool pg_rollback(PGContext *ctx);
 
@@ -114,6 +126,8 @@ int pg_cols(PGresult *res);
  * @param[in] res PGresult
  * @param[in] col 列番号
  * @return    列名
+ * @retval    NULL 失敗
+ * @retval    列名 成功
  */
 const char *pg_col_name(PGresult *res, int col);
 
@@ -123,20 +137,22 @@ const char *pg_col_name(PGresult *res, int col);
  * @param[in] row 行番号
  * @param[in] col 列番号
  * @return    row, colで指定したPGresultのデータ
+ * @retval    NULL 失敗
+ * @retval    データ 成功
  */
 const char *pg_value(PGresult *res, int row, int col);
 
 /**
- * @brief        PGresultから型定義した変数にデータを格納します。
- * @param[in]    res 結果セットの入っているPGresult
- * @param[in]    row 結果セットから取得する行番号
- * @param[inout] fields 結果セットから取得する列情報
- * @param[in]    count fieldsに格納した列情報数
- * @return       実行結果
- * @retval       1 成功
- * @details      現状は「成功」しか返しません。
- * @details      pg_value()は文字列でしか返せませんが、この関数は
- *               PGField情報に応じて型変換して値を返します。
+ * @brief         PGresultから型定義した変数にデータを格納します。
+ * @param[in]     res 結果セットの入っているPGresult
+ * @param[in]     row 結果セットから取得する行番号
+ * @param[in,out] fields 結果セットから取得する列情報
+ * @param[in]     count fieldsに格納した列情報数
+ * @return        実行結果
+ * @retval        1 成功
+ * @details       現状は「成功」しか返しません。
+ * @details       pg_value()は文字列でしか返せませんが、この関数は
+ *                PGField情報に応じて型変換して値を返します。
  */
 int pg_fetch_row(PGresult *res, int row, PGField *fields, int count);
 

@@ -46,11 +46,12 @@ typedef struct
 } PGDateTime;
 
 /**
- * @brief     日付文字列を日付と時刻を集約した構造体に分解します。
- * @param[in] src 日時文字列
- * @param[in] dst PGDateTime
- * @return    実行結果
- * @retval    1 成功
+ * @brief      日付文字列を日付と時刻を集約した構造体に分解します。
+ * @param[in]  src 日時文字列
+ * @param[out] dst PGDateTime
+ * @return     実行結果
+ * @retval     1 成功
+ * @retval     0 失敗
  */
 int pg_datetime_parse(const char *src, PGDateTime *dst);
 
@@ -68,14 +69,20 @@ PGresult *pg_tables(PGContext *ctx, const char *schema_name);
  * @brief     テーブルから１行単位でデータを取得します。
  * @param[in] res PGresult
  * @param[in] row 行番号
- * @return    PGStringList(データ)
+ * @return    PGStringList
+ * @retval    NULL 失敗
+ * @retval    PGStringList 成功
+ * @details   取得したPGStringListは、pg_string_list_free()で開放してください。
  */
 PGStringList *pg_get_row(PGresult *res, int row);
 
 /**
  * @brief     テーブルからフィールド名一覧を取得します。
  * @param[in] res PGresult
- * @return    PGStringList(フィールド名)
+ * @return    PGStringList
+ * @retval    NULL 失敗
+ * @retval    PGStringList 成功
+ * @details   取得したPGStringListは、pg_string_list_free()で開放してください。
  */
 PGStringList *pg_get_field_names(PGresult *res);
 
@@ -84,9 +91,32 @@ PGStringList *pg_get_field_names(PGresult *res);
  * @param[in] row_data PGStringList
  * @param[in] delimiter データ単位のデリミタ文字
  * @param[in] blacket   データ単位の囲い文字
- * @param[in] EOL       行単位のデリミタ文字
+ * @param[in] eol       行単位のデリミタ文字
  * @return    PGString 行単位の文字列
  */
-PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *EOL);
+PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol);
+
+/**
+ * @brief 接続文字列を作成します。
+ * @param[out] connection_string 作成した接続文字列
+ * @param[in]  host ホスト名
+ * @param[in]  port ポート番号
+ * @param[in]  dbname データベース名
+ * @param[in]  user ユーザー名
+ * @param[in]  pass パスワード
+ * @param[in]  service サービス名
+ * @return     実行結果
+ * @retval     true 成功
+ * @retval     false 失敗
+ * @details    各設定値に対応するキーワードをイコールでつないで文字列を構成します。
+ */
+bool pg_build_connection_string(
+    PGString *connection_string,
+    char *host,
+    char *port,
+    char *dbname,
+    char *user,
+    char *pass,
+    char *service);
 
 #endif

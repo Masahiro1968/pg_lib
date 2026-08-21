@@ -27,6 +27,8 @@ typedef struct
  * @param[in] name 事前実行上に設定する名称(64bytes)
  * @param[in] sql  事前実行させるSQL
  * @return    PGStmt
+ * @retval    NULL 失敗
+ * @retval    PGStmt 成功
  */
 PGStmt *pg_prepare(PGContext *ctx, const char *name, const char *sql);
 
@@ -52,6 +54,9 @@ void pg_stmt_free(PGStmt *stmt);
  * @param[in] sql 実行するSQL
  * @param[in] nparams パラメータの件数
  * @param[in] params パラメータ
+ * @return    実行結果
+ * @retval    true 成功
+ * @retval    false 失敗
  */
 bool pg_open_cursor(
     PGContext *ctx, const char *cursor_name, const char *sql,

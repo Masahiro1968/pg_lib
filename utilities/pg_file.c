@@ -7,6 +7,9 @@
  *   - ファイルの操作に関する構造体や関数を集約します。
  */
 
+#define _DEFAULT_SOURCE
+#include <dirent.h>
+#include <stdlib.h>
 #include "pg_file.h"
 
 static bool is_exist(const char *file_name)
@@ -61,6 +64,7 @@ bool is_exist_directory(const char *directory_name)
 
     struct stat st;
     int response = stat(directory_name, &st);
+    PG_LOG_DEBUG("is_exist_directory(%s) response=%d", directory_name, response);
     if (response != 0)
     {
         char *error = strerror(errno);
@@ -88,7 +92,7 @@ bool remove_file(const char *file_name)
         return false;
     }
 
-    if (!is_exist(file_name))
+    if (!is_exist_file(file_name))
     {
         PG_LOG_DEBUG("%s is still removed.", file_name);
         return true;
@@ -99,6 +103,51 @@ bool remove_file(const char *file_name)
     {
         char *error = strerror(errno);
         PG_LOG_DEBUG("failed to remove %s. errno=%d (%s)", file_name, errno, error);
+        return false;
+    }
+
+    return true;
+}
+
+bool remove_directory(const char *directory_name)
+{
+    if (!directory_name)
+    {
+        PG_LOG_DEBUG("parameter 'directory_name' is null");
+        return false;
+    }
+
+    if (!is_exist_directory(directory_name))
+    {
+        PG_LOG_DEBUG("%s is still removed.", directory_name);
+        return true;
+    }
+
+    PGStringList *files = get_file_entry_list(directory_name, true);
+    for (int i = 0; i < pg_string_list_size(files); i++)
+    {
+        PGString *file_name = pg_string_list_get(files, i);
+        PGString *file_path = pg_string_new(PATH_MAX);
+        pg_string_format(file_path, "%s/%s", directory_name, pg_string_get(file_name));
+        int ret = remove_file(pg_string_get(file_path));
+        if (ret == false)
+        {
+            char *error = strerror(errno);
+            PG_LOG_DEBUG("failed to remove %s. errno=%d (%s)",
+                         pg_string_get(file_path), errno, error);
+            pg_string_free(file_path);
+            pg_string_list_free(files);
+            return false;
+        }
+        pg_string_free(file_path);
+    }
+    pg_string_list_free(files);
+
+    int ret = remove(directory_name);
+    if (ret)
+    {
+        char *error = strerror(errno);
+        PG_LOG_DEBUG("failed to remove %s. errno=%d (%s)", directory_name, errno, error);
         return false;
     }
 
@@ -254,6 +303,7 @@ bool create_directory(const char *directory_name)
         PG_LOG_DEBUG("parameter 'directory_name' is null");
         return false;
     }
+
     if (is_exist_directory(directory_name))
     {
         PG_LOG_DEBUG("parameter %s is still exist", directory_name);
@@ -291,13 +341,13 @@ bool move_directory(const char *directory_name, const char *target_directory_nam
         return false;
     }
 
-    if (!is_exist_file(directory_name))
+    if (!is_exist_directory(directory_name))
     {
         PG_LOG_DEBUG("%s is not exist.", directory_name);
         return false;
     }
 
-    if (is_exist_file(target_directory_name))
+    if (is_exist_directory(target_directory_name))
     {
         PG_LOG_DEBUG("%s is still exist.", target_directory_name);
         return false;
@@ -311,4 +361,92 @@ bool move_directory(const char *directory_name, const char *target_directory_nam
 
     // 別ドライブ間の場合は copy_folder() -> remove_folder() の再帰処理が必要
     return false;
+}
+
+PGStringList *get_file_entry_list(const char *path, bool is_file)
+{
+    if (!path)
+        return NULL;
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return NULL;
+
+    PGStringList *list = pg_string_list_new();
+    if (!list)
+    {
+        closedir(dir);
+        return NULL;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, ".") == 0 ||
+            strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        if (entry->d_type == DT_REG && !is_file)
+        {
+            continue;
+        }
+        else if (entry->d_type == DT_DIR && is_file)
+        {
+            continue;
+        }
+
+        PGString *name = pg_string_new(0);
+        if (!name)
+            goto error;
+
+        if (pg_string_set(name, entry->d_name) < 0)
+        {
+            pg_string_free(name);
+            goto error;
+        }
+
+        if (!pg_string_list_add(list, name))
+        {
+            pg_string_free(name);
+            goto error;
+        }
+    }
+
+    closedir(dir);
+    return list;
+
+error:
+    closedir(dir);
+    pg_string_list_free(list);
+    return NULL;
+}
+
+PGString *get_real_path(const char *path)
+{
+    if (!path)
+        return NULL;
+
+    PGString *response = pg_string_new(PATH_MAX);
+
+    if (path[0] == '/')
+    {
+        // 既に絶対パス
+        pg_string_set(response, path);
+    }
+    else
+    {
+        char *real_path = realpath(path, NULL);
+        if (!real_path)
+        {
+            pg_string_free(response);
+            response = NULL;
+        }
+        else
+        {
+            pg_string_set(response, real_path);
+            free(real_path);
+        }
+    }
+
+    return response;
 }

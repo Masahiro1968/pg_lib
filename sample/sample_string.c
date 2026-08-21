@@ -11,38 +11,25 @@
 void sample01()
 {
     PGString *string1 = pg_string_new(16);  // 少ないのですぐにrealloc()される
-    PGString *string2 = pg_string_new(256); // 余裕があるので足りなくなってrealloc()される
+    PGString *string2 = pg_string_new(256); // 余裕があるので足りなくなってからrealloc()される
 
     pg_string_set(string1, "   ABCDEFGHIJKLMN   ");
+    PG_LOG_INFO("string1 value is '%s', size is %d", pg_string_get(string1), pg_string_size(string1));
+    
     pg_string_set(string2, "   abcdefghijklmn   ");
-
-    const char *test1 = pg_string_get(string1);
-    const int test1_len = pg_string_size(string1);
-    PG_LOG_INFO("string1 value is %s, size is %d", test1, test1_len);
+    PG_LOG_INFO("string2 value is '%s', size is %d", pg_string_get(string2), pg_string_size(string2));
 
     pg_string_trim_right(string1);
-    const char *test1T = pg_string_get(string1);
-    const int test1_lenT = pg_string_size(string1);
-    PG_LOG_INFO("string1(trimed) value is %s, size is %d", test1T, test1_lenT);
-
-    const char *test2 = pg_string_get(string2);
-    const int test2_len = pg_string_size(string2);
-    PG_LOG_INFO("string2 value is %s, size is %d", test2, test2_len);
+    PG_LOG_INFO("string1(trimed) value is '%s', size is %d", pg_string_get(string1), pg_string_size(string1));
 
     pg_string_trim_left(string2);
-    const char *test2T = pg_string_get(string2);
-    const int test2_lenT = pg_string_size(string2);
-    PG_LOG_INFO("string2(trimed) value is %s, size is %d", test2T, test2_lenT);
+    PG_LOG_INFO("string2(trimed) value is '%s', size is %d", pg_string_get(string2), pg_string_size(string2));
 
     const int join_size = pg_string_join(string1, string2);
-    const char *join = pg_string_get(string1);
-    const int join_len = pg_string_size(string1);
-    PG_LOG_INFO("string1 value is %s, size is %d", join, join_len);
+    PG_LOG_INFO("joined string1(%d) value is '%s', size is %d", join_size, pg_string_get(string1), pg_string_size(string1));
 
     pg_string_trim(string1);
-    const char *joinT = pg_string_get(string1);
-    const int join_lenT = pg_string_size(string1);
-    PG_LOG_INFO("string1(join and trimed) value is %s, size is %d", joinT, join_lenT);
+    PG_LOG_INFO("string1(joined and trimed) value is '%s', size is %d", pg_string_get(string1), pg_string_size(string1));
 
     pg_string_free(string2);
     pg_string_free(string1);

@@ -114,7 +114,7 @@ PGStringList *pg_get_field_names(PGresult *res)
     return list;
 }
 
-PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *EOL)
+PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol)
 {
     const int buffer_size = 1024;
     PGString *response = pg_string_new(buffer_size);
@@ -150,10 +150,52 @@ PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char
         pg_string_free(temp);
     }
 
-    PGString *eol = pg_string_new(buffer_size);
-    pg_string_set(eol, EOL);
-    pg_string_join(response, eol);
-    pg_string_free(eol);
+    PGString *end_of_line = pg_string_new(buffer_size);
+    pg_string_set(end_of_line, eol);
+    pg_string_join(response, end_of_line);
+    pg_string_free(end_of_line);
 
     return response;
+}
+
+static bool append_connection_string(PGString *string, char *keyword, char *value)
+{
+    PGString *work = pg_string_new(40);
+    pg_string_format(work, "%s=%s ", keyword, value);
+    pg_string_join(string, work);
+    pg_string_free(work);
+
+    return true;
+}
+
+bool pg_build_connection_string(
+    PGString *connection_string,
+    char *host,
+    char *port,
+    char *dbname,
+    char *user,
+    char *pass,
+    char *service)
+{
+    bool ret = false;
+
+    if (service)
+        ret = append_connection_string(connection_string, "service", service);
+
+    if (host)
+        ret = append_connection_string(connection_string, "host", host);
+
+    if (port)
+        ret = append_connection_string(connection_string, "port", port);
+
+    if (dbname)
+        ret = append_connection_string(connection_string, "dbname", dbname);
+
+    if (user)
+        ret = append_connection_string(connection_string, "user", user);
+
+    if (pass)
+        ret = append_connection_string(connection_string, "password", pass);
+
+    return ret;
 }

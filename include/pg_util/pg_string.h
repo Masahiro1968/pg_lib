@@ -36,6 +36,8 @@ typedef struct
  * @brief     文字列格納領域を確保します。
  * @param[in] size 文字列サイズ（NULL終端を含まない）
  * @return    PGString
+ * @retval    NULL 失敗
+ * @retval    PGString 成功
  */
 PGString *pg_string_new(size_t size);
 
@@ -60,6 +62,7 @@ void pg_string_free(PGString *string);
  * @param[out] string PGString 文字列を設定する対象
  * @param[in]  text 設定する文字列
  * @return     設定された文字列サイズ
+ * @details    -1の場合は、エラー発生
  */
 int pg_string_set(PGString *string, const char *text);
 
@@ -142,7 +145,8 @@ void pg_string_list_free(PGStringList *list);
  * @brief     文字列情報から指定の文字列を検索します。
  * @param[in] string PGString 文字列を検索する対象
  * @param[in] needle 検索する文字列
- * @return    条件に一致した文字列の先頭からの位置
+ * @return    条件に一致した文字列の先頭からの位置<br>
+ *            見つからない場合は、-1を返します。
  */
 int pg_string_find(PGString *string, const char *needle);
 

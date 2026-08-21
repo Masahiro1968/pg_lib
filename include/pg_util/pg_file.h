@@ -16,7 +16,9 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <unistd.h>
+#include <limits.h>
 #include "pg_logger.h"
+#include "pg_string.h"
 
 /**
  * @brief     ファイルの存在を確認します。
@@ -47,9 +49,18 @@ bool is_exist_directory(const char *directory_name);
  * @retval    true ファイルの削除成功
  * @retval    false ファイルの削除失敗
  * @details   ファイルの削除に使用します。
- *            ディレクトリに使用する場合は、空である必要があります。
  */
 bool remove_file(const char *file_name);
+
+/**
+ * @brief ディレクトリを削除します。
+ * @param[in] directory_name 削除するディレクトリ名
+ * @return    実行結果
+ * @retval    true ディレクトリの削除成功
+ * @retval    false ディレクトリの削除失敗
+ * @details   ディレクトリの削除に使用します。
+ */
+bool remove_directory(const char *directory_name);
 
 /**
  * @brief     ファイル名を変更します。
@@ -116,5 +127,20 @@ bool copy_directory(const char *directory_name, const char *target_directory_nam
  * @note      ファイルシステムをまたぐ場合の処理が未実装です。
  */
 bool move_directory(const char *directory_name, const char *target_directory_name);
+
+/**
+ * @brief     ファイル一覧を取得します。
+ * @param[in] path 取得対象のパス
+ * @param[in] is_file 取得対象がファイルならtrue, ディレクトリならfalse
+ * @return    PGStringList ファイル一覧
+ */
+PGStringList *get_file_entry_list(const char *path, bool is_file);
+
+/**
+ * @brief     相対パスをrealpath()で絶対パスに変換します。
+ * @param[in] path 相対パス
+ * @return    PGString 変換した絶対パス
+ */
+PGString *get_real_path(const char *path);
 
 #endif

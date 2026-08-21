@@ -1,6 +1,6 @@
 /**
  * @file    sample_make_data.c
- * @brief   扱う型を定義したテーブルを作成し、データを格納するサンプル
+ * @brief   扱う型を定義したテーブルを作成し、データを格納するサンプル１
  * @author  Masahiro1968
  * @date    2026-08-01
  * @details
