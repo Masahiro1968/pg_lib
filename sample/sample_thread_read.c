@@ -29,6 +29,11 @@ void dump_table(
     const char *connection_string,
     const char *schema_name,
     const char *table_name,
+    const char *delimiter,
+    const char *blacket,
+    const char *null_value,
+    const char *eol,
+    bool need_field_name,
     const char *output)
 {
     int thread_no = omp_get_thread_num();
@@ -83,18 +88,18 @@ void dump_table(
     }
     else
     {
-        const char *delimiter = ",";
-        const char *blacket = "\"";
-        const char *eol = "\n";
-        PGStringList *field_name_list = pg_get_field_names(res);
-        PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol);
-        fputs(pg_string_get(field_names), fp);
-        pg_string_free(field_names);
-        pg_string_list_free(field_name_list);
+        if (need_field_name)
+        {
+            PGStringList *field_name_list = pg_get_field_names(res);
+            PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol);
+            fputs(pg_string_get(field_names), fp);
+            pg_string_free(field_names);
+            pg_string_list_free(field_name_list);
+        }
 
         for (int row = 0; row < pg_rows(res); row++)
         {
-            PGStringList *field_data_list = pg_get_row(res, row);
+            PGStringList *field_data_list = pg_get_row(res, row, null_value);
             PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol);
             fputs(pg_string_get(field_data), fp);
             pg_string_free(field_data);
@@ -256,19 +261,26 @@ int main(int argc, char **argv)
             PG_LOG_DEBUG("search table %d:%s", i, table_names[i]);
         }
 
-#pragma omp parallel
+        #pragma omp parallel
         {
-#pragma omp single
+            #pragma omp single
             {
                 PG_LOG_INFO("OpenMP threads = %d", omp_get_num_threads());
             }
 
-#pragma omp for schedule(dynamic, 1)
+            #pragma omp for schedule(dynamic, 1)
             for (int i = 0; i < table_count; i++)
             {
-                dump_table(pg_string_get(
-                               connection),
-                           schema, table_names[i], output);
+                dump_table(
+                    pg_string_get(connection),
+                    schema,
+                    table_names[i],
+                    ",",
+                    "\"",
+                    "<NULL>",
+                    "\n",
+                    true,
+                    output);
             }
         }
 

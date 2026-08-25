@@ -69,12 +69,14 @@ PGresult *pg_tables(PGContext *ctx, const char *schema_name);
  * @brief     テーブルから１行単位でデータを取得します。
  * @param[in] res PGresult
  * @param[in] row 行番号
+ * @param[in] null_value データがNULLの場合の代替出力文字
  * @return    PGStringList
  * @retval    NULL 失敗
  * @retval    PGStringList 成功
  * @details   取得したPGStringListは、pg_string_list_free()で開放してください。
+ * @details   NULLデータを""で表示する場合は、null_valueにNULLを設定してください。
  */
-PGStringList *pg_get_row(PGresult *res, int row);
+PGStringList *pg_get_row(PGresult *res, int row, const char *null_value);
 
 /**
  * @brief     テーブルからフィールド名一覧を取得します。

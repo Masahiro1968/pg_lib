@@ -15,6 +15,11 @@ project(
 )
 
 #
+# Testing
+#
+enable_testing()
+
+#
 # Build type
 #
 if(NOT CMAKE_BUILD_TYPE)
@@ -40,6 +45,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #
 option(PG_LIB_BUILD_SAMPLES    "Build sample programs"       ON)
 option(PG_LIB_BUILD_UTILITIES  "Build utilities"             ON)
+option(PG_LIB_BUILD_TESTING    "Build testing programs"      ON)
 option(PG_LIB_ENABLE_SANITIZER "Enable Address/UB Sanitizer" ON)
 option(PG_LIB_WERROR           "Treat warnings as errors"    ON)
 option(PG_LIB_USE_OPENMP       "Use OpenMP for Sample"       ON)
@@ -215,6 +221,46 @@ if(PG_LIB_BUILD_SAMPLES)
                     OpenMP::OpenMP_C
             )
         endif()
+
+    endforeach()
+
+endif()
+
+#
+# Testing
+#
+if(PG_LIB_BUILD_TESTING)
+
+    file(GLOB PG_TEST_SOURCES
+        ${PROJECT_SOURCE_DIR}/test/*.c
+    )
+
+    foreach(SRC ${PG_TEST_SOURCES})
+
+        get_filename_component(TEST_NAME ${SRC} NAME_WE)
+
+        add_executable(
+            ${TEST_NAME}
+            ${SRC}
+        )
+
+        target_include_directories(
+            ${TEST_NAME}
+            PUBLIC
+                ${PG_LIB_INCLUDES}
+                ${PG_UTIL_INCLUDES}
+        )
+
+        target_link_libraries(
+            ${TEST_NAME}
+            PRIVATE
+                pg_lib pg_util
+        )
+
+        add_test(
+            NAME ${TEST_NAME}
+            COMMAND ${TEST_NAME}
+        )
 
     endforeach()
 

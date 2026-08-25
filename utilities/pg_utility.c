@@ -60,7 +60,7 @@ PGresult *pg_tables(PGContext *ctx, const char *schema_name)
     return PQexec(ctx->conn, sql);
 }
 
-PGStringList *pg_get_row(PGresult *res, int row)
+PGStringList *pg_get_row(PGresult *res, int row, const char *null_value)
 {
     PGStringList *list = pg_string_list_new();
 
@@ -74,7 +74,14 @@ PGStringList *pg_get_row(PGresult *res, int row)
             return NULL;
         }
 
-        pg_string_set(str, value);
+        if (pg_is_null(res, row, col) && null_value)
+        {
+            pg_string_set(str, null_value);
+        }
+        else
+        {
+            pg_string_set(str, value);
+        }
 
         if (!pg_string_list_add(list, str))
         {
