@@ -1,11 +1,11 @@
 /**
- * @file    sample_connect.c
- * @brief   接続方法に関するサンプル
+ * @file    sample_execute.c
+ * @brief   ファイルからのSQL供給とその連続時実行に関するサンプル
  * @author  Masahiro1968
- * @date    2026-08-01
+ * @date    2026-08-22
  * @details
- *   - PostgreSQLへの接続と切断に関するサンプルコードとなります。
- *   - 接続後、テーブルアクセスを伴わない簡単なSQLを実行し、結果を取得します。
+ *   - ファイルから供給されるSQLを順次実行していきます。
+ *   - データベースへの接続と切断は＠から始まるコマンドとして処理します。
  */
 
 #include <stdio.h>
