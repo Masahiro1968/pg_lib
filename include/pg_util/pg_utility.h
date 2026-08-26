@@ -94,9 +94,12 @@ PGStringList *pg_get_field_names(PGresult *res);
  * @param[in] delimiter データ単位のデリミタ文字
  * @param[in] blacket   データ単位の囲い文字
  * @param[in] eol       行単位のデリミタ文字
+ * @param[in] null_blacket NULLデータにブラケットを付けるか否か
  * @return    PGString 行単位の文字列
+ * @details   null_blacketをfalseにすると、,,, となり、<br>
+ *            trueにすると、"","","" という風になります。
  */
-PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol);
+PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol, bool null_blacket);
 
 /**
  * @brief 接続文字列を作成します。

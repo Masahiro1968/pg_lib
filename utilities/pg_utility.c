@@ -89,6 +89,12 @@ PGStringList *pg_get_row(PGresult *res, int row, const char *null_value)
             pg_string_list_free(list);
             return NULL;
         }
+
+        bool is_numeric = pg_is_numeric(pg_col_type(res, col));
+        if (is_numeric)
+        {
+            pg_string_trim_trailing_zeros(str);
+        }
     }
 
     return list;
@@ -121,7 +127,7 @@ PGStringList *pg_get_field_names(PGresult *res)
     return list;
 }
 
-PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol)
+PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol, bool null_blacket)
 {
     const int buffer_size = 1024;
     PGString *response = pg_string_new(buffer_size);
@@ -139,7 +145,8 @@ PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char
             }
             else
             {
-                pg_string_format(temp, "%s%s%s", blacket, string, blacket);
+                if (string[0])
+                    pg_string_format(temp, "%s%s%s", blacket, string, blacket);
             }
         }
         else
@@ -150,7 +157,15 @@ PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char
             }
             else
             {
-                pg_string_format(temp, "%s%s%s%s", delimiter, blacket, string, blacket);
+                if (string[0])
+                    pg_string_format(temp, "%s%s%s%s", delimiter, blacket, string, blacket);
+                else
+                {
+                    if (null_blacket)
+                        pg_string_format(temp, "%s%s%s", delimiter, blacket, blacket);
+                    else
+                        pg_string_format(temp, "%s", delimiter);
+                }
             }
         }
         pg_string_join(response, temp);

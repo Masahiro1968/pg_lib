@@ -76,7 +76,7 @@ bool pg_exec(PGContext *ctx, const char *sql);
  * @return    PGresult
  * @retval    NULL 失敗
  * @retval    PGresult 成功
- * 
+ *
  */
 PGresult *pg_query(PGContext *ctx, const char *sql);
 
@@ -192,10 +192,19 @@ int pg_connected(PGContext *ctx);
  * @param[in] res PGresult
  * @param[in] row 行番号
  * @param[in] col 列番号
- * @return    実行結果
+ * @return    判定結果
  * @retval    true NULLデータ
  * @retval    false データあり
  */
 bool pg_is_null(PGresult *res, int row, int col);
+
+/**
+ * @brief     数値データの判定をします。
+ * @param[in] oid Oid
+ * @return    判定結果
+ * @retval    true 数値データ
+ * @retval    false 数値データではない
+ */
+bool pg_is_numeric(Oid oid);
 
 #endif

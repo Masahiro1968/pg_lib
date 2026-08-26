@@ -24,7 +24,6 @@
 
 #define USE_LOG_FILE 0
 
-const char *SCHEMA_NAME = "sample_schema";
 const char *SQL_DROP_SCHEMA =
     "DROP SCHEMA IF EXISTS %s CASCADE;";
 const char *SQL_CREATE_SCHEMA =
@@ -73,7 +72,6 @@ void print_usage(char *argv0)
     printf("  -u or --user    <login user name>\n");
     printf("  -p or --pass    <login password>\n");
     printf("  -s or --service <service name>\n");
-    printf("  -o or --output  <output directory>\n");
     printf("  -t or --tables  <create table count>\n");
     printf("  -r or --records <create record count>\n");
 
@@ -103,7 +101,6 @@ int main(int argc, char **argv)
     char *user = NULL;
     char *pass = NULL;
     char *service = NULL;
-    char *output = NULL;
     char *tables = NULL;
     char *records = NULL;
     int num_of_tables = -1;
@@ -117,7 +114,6 @@ int main(int argc, char **argv)
         {"user", required_argument, 0, 'u'},
         {"pass", required_argument, 0, 'p'},
         {"service", required_argument, 0, 's'},
-        {"output", required_argument, 0, 'o'},
         {"tables", required_argument, 0, 't'},
         {"records", required_argument, 0, 'r'},
         {0, 0, 0, 0} // EOL
@@ -126,7 +122,7 @@ int main(int argc, char **argv)
     int opt;
     int option_index;
     while ((opt = getopt_long(
-                argc, argv, "H:P:D:S:u:p:s:o:t:r:", parameters, &option_index)) != -1)
+                argc, argv, "H:P:D:S:u:p:s:t:r:", parameters, &option_index)) != -1)
     {
         switch (opt)
         {
@@ -151,9 +147,6 @@ int main(int argc, char **argv)
         case 's':
             service = optarg;
             break;
-        case 'o':
-            output = optarg;
-            break;
         case 't':
             tables = optarg;
             break;
@@ -167,13 +160,14 @@ int main(int argc, char **argv)
     }
 
     PG_LOG_INFO(
-        "host=%s port=%s dbname=%s schema=%s user=%s password=%s service=%s output=%s tables=%s records=%s",
-        host, port, dbname, schema, user, pass, service, output, tables, records);
+        "host=%s port=%s dbname=%s schema=%s user=%s password=%s service=%s tables=%s records=%s",
+        host, port, dbname, schema, user, pass, service, tables, records);
 
     if (tables)
     {
         num_of_tables = atoi(tables);
-        if (num_of_tables <= 0) {
+        if (num_of_tables <= 0)
+        {
             PG_LOG_ERROR("parameter 'tables' is invalid(%s).", tables);
             exit(EXIT_FAILURE);
         }
@@ -182,7 +176,8 @@ int main(int argc, char **argv)
     if (records)
     {
         num_of_records = atoi(records);
-        if (num_of_records <= 0) {
+        if (num_of_records <= 0)
+        {
             PG_LOG_ERROR("parameter 'records' is invalid(%s).", records);
             exit(EXIT_FAILURE);
         }

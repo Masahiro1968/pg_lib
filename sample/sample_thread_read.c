@@ -32,6 +32,7 @@ void dump_table(
     const char *delimiter,
     const char *blacket,
     const char *null_value,
+    bool null_blacket,
     const char *eol,
     bool need_field_name,
     const char *output)
@@ -91,7 +92,7 @@ void dump_table(
         if (need_field_name)
         {
             PGStringList *field_name_list = pg_get_field_names(res);
-            PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol);
+            PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol, null_blacket);
             fputs(pg_string_get(field_names), fp);
             pg_string_free(field_names);
             pg_string_list_free(field_name_list);
@@ -100,7 +101,7 @@ void dump_table(
         for (int row = 0; row < pg_rows(res); row++)
         {
             PGStringList *field_data_list = pg_get_row(res, row, null_value);
-            PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol);
+            PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol, null_blacket);
             fputs(pg_string_get(field_data), fp);
             pg_string_free(field_data);
             pg_string_list_free(field_data_list);
@@ -272,15 +273,16 @@ int main(int argc, char **argv)
             for (int i = 0; i < table_count; i++)
             {
                 dump_table(
-                    pg_string_get(connection),
-                    schema,
-                    table_names[i],
-                    ",",
-                    "\"",
-                    "<NULL>",
-                    "\n",
-                    true,
-                    output);
+                    pg_string_get(connection), // connection_string
+                    schema,                    // schema_name
+                    table_names[i],            // table_name
+                    ",",                       // delimiter
+                    "\"",                      // blacket
+                    "",                        // null_value
+                    false,                     // null_blacket
+                    "\n",                      // eol
+                    true,                      // need_field_name
+                    output);                   // output directory
             }
         }
 

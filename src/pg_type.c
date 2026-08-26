@@ -22,6 +22,12 @@ const char *pg_col_type_name(PGresult *res, int col)
     return get_type_name(pg_col_type(res, col));
 }
 
+bool pg_is_numeric(Oid oid)
+{
+    return (oid == 21 || oid == 23 || oid == 20 ||
+            oid == 700 || oid == 701 || oid == 1700);
+}
+
 static const char *get_type_name(Oid oid)
 {
     switch (oid)
