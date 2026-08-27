@@ -117,11 +117,11 @@ PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char
  */
 bool pg_build_connection_string(
     PGString *connection_string,
-    char *host,
-    char *port,
-    char *dbname,
-    char *user,
-    char *pass,
-    char *service);
+    const char *host,
+    const char *port,
+    const char *dbname,
+    const char *user,
+    const char *pass,
+    const char *service);
 
 #endif

@@ -178,7 +178,7 @@ int main(int argc, char **argv)
     int opt;
     int option_index;
     while ((opt = getopt_long(
-                argc, argv, "H:P:D:S:u:p:s:o", parameters, &option_index)) != -1)
+                argc, argv, "H:P:D:S:u:p:s:o:", parameters, &option_index)) != -1)
     {
         switch (opt)
         {

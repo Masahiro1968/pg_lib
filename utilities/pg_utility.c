@@ -180,7 +180,7 @@ PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char
     return response;
 }
 
-static bool append_connection_string(PGString *string, char *keyword, char *value)
+static bool append_connection_string(PGString *string, const char *keyword, const char *value)
 {
     PGString *work = pg_string_new(40);
     pg_string_format(work, "%s=%s ", keyword, value);
@@ -192,12 +192,12 @@ static bool append_connection_string(PGString *string, char *keyword, char *valu
 
 bool pg_build_connection_string(
     PGString *connection_string,
-    char *host,
-    char *port,
-    char *dbname,
-    char *user,
-    char *pass,
-    char *service)
+    const char *host,
+    const char *port,
+    const char *dbname,
+    const char *user,
+    const char *pass,
+    const char *service)
 {
     bool ret = false;
 
