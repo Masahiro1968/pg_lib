@@ -80,14 +80,14 @@ int pg_string_format(PGString *string, const char *format, ...);
  * @param[in] string PGString 文字列を取得する対象
  * @return    設定された文字列
  */
-const char *pg_string_get(PGString *string);
+const char *pg_string_get(const PGString *string);
 
 /**
  * @brief     設定された文字列のサイズを取得します。
  * @param[in] string PGString 文字列のサイズを取得する対象
  * @return    設定された文字列のサイズ
  */
-int pg_string_size(PGString *string);
+int pg_string_size(const PGString *string);
 
 /**
  * @brief         文字列情報を連結します。
@@ -95,7 +95,7 @@ int pg_string_size(PGString *string);
  * @param[in]     append_string PGString 追加する文字列情報
  * @return        base_stringの文字列サイズ
  */
-int pg_string_join(PGString *base_string, PGString *append_string);
+int pg_string_join(PGString *base_string, const PGString *append_string);
 
 /**
  * @brief         文字列の左側の余白を削除します。
@@ -127,7 +127,7 @@ void pg_string_trim_trailing_zeros(PGString *string);
  * @param[in] delimiter 分割単位のデリミタ文字
  * @return    PGStringList 文字列情報配列
  */
-PGStringList *pg_string_split(PGString *string, char delimiter);
+PGStringList *pg_string_split(const PGString *string, char delimiter);
 
 /**
  * @brief  文字列情報配列を生成します。
@@ -184,5 +184,65 @@ PGString *pg_string_list_get(PGStringList *list, int count);
  *            行います。個別の削除は不要です。
  */
 int pg_string_list_add(PGStringList *list, PGString *string);
+
+/**
+ * @brief         文字列全体を大文字に変換します。
+ * @param[in,out] string PGString 変換する文字列
+ * @details       入力された文字列そのものを変換するので、破壊されたくない場合<br>
+ *                文字列のコピーを使用してください。
+ */
+void pg_string_to_upper(PGString *string);
+
+/**
+ * @brief         文字列全体を小文字に変換します。
+ * @param[in,out] string PGString 変換する文字列
+ * @details       入力された文字列そのものを変換するので、破壊されたくない場合<br>
+ *                文字列のコピーを使用してください。
+ */
+void pg_string_to_lower(PGString *string);
+
+/**
+ * @brief     指定した位置から指定文字数分の部分文字列を生成して返します。
+ * @param[in] string PGString 対象の文字列
+ * @param[in] start 開始インデックス (0オリジン)
+ * @param[in] count 抽出する文字数
+ * @return    新しく生成された PGString* (失敗または範囲外の場合は NULL または空文字列)
+ * @details   生成された文字列は、最後にpg_string_free()で開放してください。
+ */
+PGString *pg_string_mid(const PGString *string, size_t start, size_t count);
+
+/**
+ * @brief     先頭から指定文字数分の部分文字列を生成して返します。
+ * @param[in] string PGString 対象の文字列
+ * @param[in] count 抽出する文字数
+ * @return    新しく生成された PGString* (失敗または範囲外の場合は NULL または空文字列)
+ * @details   生成された文字列は、最後にpg_string_free()で開放してください。
+ */
+PGString *pg_string_left(const PGString *string, size_t count);
+
+/**
+ * @brief     末尾から指定文字数分の部分文字列を生成して返します。
+ * @param[in] string PGString 対象の文字列
+ * @param[in] count 抽出する文字数
+ * @return    新しく生成された PGString* (失敗または範囲外の場合は NULL または空文字列)
+ * @details   生成された文字列は、最後にpg_string_free()で開放してください。
+ */
+PGString *pg_string_right(const PGString *string, size_t count);
+
+/**
+ * @brief     文字列を末尾から検索し、最初に見つかったインデックスを返します。
+ * @param[in] string PGString 検索対象となる文字列
+ * @param[in] needle 検索する文字列
+ * @return    見つかったインデックス（見つからない、またはエラー時は -1）
+ */
+int pg_string_reverse_find(const PGString *string, const char *needle);
+
+/**
+ * @brief     先頭と末尾が指定した引用符（ダブルクォート等）で囲まれている場合のみ、それを取り除きます。
+ * @param[in] string PGString 引用符を除去する文字列
+ * @param[in] quote_char 取り除きたい引用符文字 ('"' や '\'' など)
+ * @return    実際に取り除いた場合は 1、変化がなかった場合は 0、エラーは -1
+ */
+int pg_string_unquote(PGString *string, char quote_char);
 
 #endif

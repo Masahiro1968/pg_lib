@@ -23,9 +23,9 @@
 #include "pg_file.h"
 #include "pg_string.h"
 
-#define USE_LOG_FILE 0
+#define USE_LOG_FILE 1
 
-void dump_table(
+void dump_table_fetch(
     const char *connection_string,
     const char *schema_name,
     const char *table_name,
@@ -38,7 +38,7 @@ void dump_table(
     const char *output)
 {
     int thread_no = omp_get_thread_num();
-    PG_LOG_DEBUG("begin[%d] dump_table(%s)", thread_no, table_name);
+    PG_LOG_DEBUG("begin[%d] dump_table_fetch(%s)", thread_no, table_name);
 
     bool ret;
     char file_name[PATH_MAX];
@@ -81,30 +81,45 @@ void dump_table(
     template = "SELECT * FROM %s;";
     snprintf(sql, buffer_size, template, table_name);
     PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
-    res = pg_query(ctx, sql);
-    if (!pg_ok(res))
+    ret = pg_open_cursor(ctx, "dump_cursor", sql, 0, NULL);
+    if (!ret)
     {
         PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup2;
+        goto cleanup1;
     }
     else
     {
-        if (need_field_name)
+        bool field_name_out = false;
+        for(;;)
         {
-            PGStringList *field_name_list = pg_get_field_names(res);
-            PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol, null_blacket);
-            fputs(pg_string_get(field_names), fp);
-            pg_string_free(field_names);
-            pg_string_list_free(field_name_list);
-        }
+            res = pg_read_cursor(ctx, "dump_cursor", 100);
+            if (!pg_ok(res) || pg_rows(res) == 0)
+            {
+                pg_close_cursor(ctx, "dump_cursor");
+                PG_LOG_DEBUG("dump finished. %s", table_name);
+                break;
+            }
+            
+            if (need_field_name && !field_name_out)
+            {
+                PGStringList *field_name_list = pg_get_field_names(res);
+                PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol, null_blacket);
+                fputs(pg_string_get(field_names), fp);
+                pg_string_free(field_names);
+                pg_string_list_free(field_name_list);
+                field_name_out = true;
+            }
 
-        for (int row = 0; row < pg_rows(res); row++)
-        {
-            PGStringList *field_data_list = pg_get_row(res, row, null_value);
-            PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol, null_blacket);
-            fputs(pg_string_get(field_data), fp);
-            pg_string_free(field_data);
-            pg_string_list_free(field_data_list);
+            for (int row = 0; row < pg_rows(res); row++)
+            {
+                PGStringList *field_data_list = pg_get_row(res, row, null_value);
+                PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol, null_blacket);
+                fputs(pg_string_get(field_data), fp);
+                pg_string_free(field_data);
+                pg_string_list_free(field_data_list);
+            }
+
+            pg_result_free(res);
         }
     }
 
@@ -118,7 +133,7 @@ cleanup1:
 
     fclose(fp);
 
-    PG_LOG_DEBUG("end dump_table()");
+    PG_LOG_DEBUG("end dump_table_fetch()");
 }
 
 void print_usage(char *argv0)
@@ -272,7 +287,7 @@ int main(int argc, char **argv)
             #pragma omp for schedule(dynamic, 1)
             for (int i = 0; i < table_count; i++)
             {
-                dump_table(
+                dump_table_fetch(
                     pg_string_get(connection), // connection_string
                     schema,                    // schema_name
                     table_names[i],            // table_name

@@ -16,7 +16,7 @@
 #include "pg_file.h"
 #include "pg_string.h"
 
-#define USE_LOG_FILE 0
+#define USE_LOG_FILE 1
 
 PGStringList *parse_sql_string(const char *file_name)
 {
@@ -63,7 +63,7 @@ PGStringList *parse_sql_string(const char *file_name)
 int main(int argc, char **argv)
 {
 #if (USE_LOG_FILE == 1)
-    const char *log_file = "./sample_connect.log";
+    const char *log_file = "./sample_execute.log";
     remove_file(log_file);
     FILE *fp = fopen(log_file, "w");
     pg_log_set_stream(fp);

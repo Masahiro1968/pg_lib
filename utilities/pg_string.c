@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "pg_string.h"
 
 PGString *pg_string_new(size_t size)
@@ -108,7 +109,7 @@ int pg_string_format(PGString *string, const char *format, ...)
     return ret;
 }
 
-const char *pg_string_get(PGString *string)
+const char *pg_string_get(const PGString *string)
 {
     if (!string)
         return NULL;
@@ -116,7 +117,7 @@ const char *pg_string_get(PGString *string)
     return string->data;
 }
 
-int pg_string_size(PGString *string)
+int pg_string_size(const PGString *string)
 {
     if (!string)
         return -1;
@@ -124,7 +125,7 @@ int pg_string_size(PGString *string)
     return string->size;
 }
 
-int pg_string_join(PGString *base, PGString *append)
+int pg_string_join(PGString *base, const PGString *append)
 {
     if (!base || !append)
         return -1;
@@ -193,7 +194,7 @@ void pg_string_trim_trailing_zeros(PGString *string)
         {
             string->size--;
         }
-        
+
         // '0' を削った結果、末尾が '.' になったら '.' も削る ("1." -> "1")
         if (string->size > 0 && string->data[string->size - 1] == '.')
         {
@@ -204,7 +205,7 @@ void pg_string_trim_trailing_zeros(PGString *string)
     }
 }
 
-PGStringList *pg_string_split(PGString *s, char delimiter)
+PGStringList *pg_string_split(const PGString *s, char delimiter)
 {
     PGStringList *list = pg_string_list_new();
     size_t start = 0;
@@ -329,4 +330,107 @@ int pg_string_list_add(PGStringList *list, PGString *string)
     list->items[list->count++] = string;
 
     return list->count;
+}
+
+void pg_string_to_upper(PGString *string)
+{
+    if (!string || !string->data)
+        return;
+
+    for (size_t i = 0; i < string->size; i++)
+    {
+        string->data[i] = (char)toupper((unsigned char)string->data[i]);
+    }
+}
+
+void pg_string_to_lower(PGString *string)
+{
+    if (!string || !string->data)
+        return;
+
+    for (size_t i = 0; i < string->size; i++)
+    {
+        string->data[i] = (char)tolower((unsigned char)string->data[i]);
+    }
+}
+
+PGString *pg_string_mid(const PGString *string, size_t start, size_t count)
+{
+    if (!string || !string->data || start >= string->size)
+        return NULL;
+
+    // 抽出可能な文字数の調整
+    if (start + count > string->size)
+    {
+        count = string->size - start;
+    }
+
+    PGString *result = pg_string_new(count);
+    if (!result)
+        return NULL;
+
+    memcpy(result->data, string->data + start, count);
+    result->data[count] = '\0';
+    result->size = count;
+
+    return result;
+}
+
+PGString *pg_string_left(const PGString *string, size_t count)
+{
+    return pg_string_mid(string, 0, count);
+}
+
+PGString *pg_string_right(const PGString *string, size_t count)
+{
+    if (!string || !string->data)
+        return NULL;
+
+    if (count > string->size)
+    {
+        count = string->size;
+    }
+
+    size_t start = string->size - count;
+    return pg_string_mid(string, start, count);
+}
+
+int pg_string_reverse_find(const PGString *string, const char *needle)
+{
+    if (!string || !string->data || !needle)
+        return -1;
+
+    size_t needle_len = strlen(needle);
+    if (needle_len == 0 || needle_len > string->size)
+        return -1;
+
+    // 末尾側から順に一致チェック
+    for (size_t i = string->size - needle_len + 1; i > 0; i--)
+    {
+        size_t idx = i - 1;
+        if (memcmp(string->data + idx, needle, needle_len) == 0)
+        {
+            return (int)idx;
+        }
+    }
+
+    return -1;
+}
+
+int pg_string_unquote(PGString *string, char quote_char)
+{
+    if (!string || string->size < 2)
+        return 0; // 2文字未満なら囲まれている可能性はない
+
+    // 先頭と末尾がともに quote_char の場合のみ外す
+    if (string->data[0] == quote_char && string->data[string->size - 1] == quote_char)
+    {
+        // 先頭の1文字を詰める
+        memmove(string->data, string->data + 1, string->size - 2);
+        string->size -= 2;
+        string->data[string->size] = '\0';
+        return 1;
+    }
+
+    return 0;
 }

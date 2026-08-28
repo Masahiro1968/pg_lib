@@ -143,4 +143,11 @@ PGStringList *get_file_entry_list(const char *path, bool is_file);
  */
 PGString *get_real_path(const char *path);
 
+/**
+ * @brief     Linuxコマンドを実行し、結果をPGStringに格納します。
+ * @param[in] command Linuxコマンド
+ * @return    PGString 実行結果
+ */
+PGString *execute_command(const char *command);
+
 #endif

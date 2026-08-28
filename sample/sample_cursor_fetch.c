@@ -17,6 +17,8 @@
 
 #define USE_LOG_FILE 1
 
+const char *CONNECTION_STRING = "host=localhost dbname=test_database user=test_user password=testuser";
+
 int main()
 {
 #if (USE_LOG_FILE == 1)
@@ -37,14 +39,8 @@ int main()
     PGresult *res = NULL;
     char *sql = NULL;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
-    {
-        PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup1;
-    }
-
-    if (!pg_begin(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
         goto cleanup1;
@@ -58,7 +54,7 @@ int main()
         "WHERE id < $1 "
         "ORDER BY id";
     PG_LOG_INFO("SQL=%s", sql);
-    const char *params[] = {"10"};
+    const char *params[] = {"100"};
     ret = pg_open_cursor(ctx, "sample_cursor", sql, 1, params);
     if (!ret)
     {
@@ -70,11 +66,12 @@ int main()
 
     for (;;)
     {
-        res = pg_query(ctx, "FETCH 10 FROM sample_Cursor");
+        PG_LOG_DEBUG("pg_read_cursor(%d)", 10);
+        res = pg_read_cursor(ctx, "sample_cursor", 10);
         if (!pg_ok(res))
         {
             PG_LOG_ERROR(pg_error(ctx));
-            //! PGresultを必ず開放する。
+            pg_close_cursor(ctx, "sample_cursor");
             pg_result_free(res);
             goto cleanup2;
         }
@@ -83,7 +80,6 @@ int main()
         if (rows == 0)
         {
             PG_LOG_DEBUG("reached end of data.");
-            //! PGresultを必ず開放する。
             pg_result_free(res);
             break;
         }
@@ -125,14 +121,7 @@ int main()
         pg_result_free(res);
     }
 
-    ret = pg_exec(ctx, "CLOSE sample_cursor");
-    if (!ret)
-    {
-        PG_LOG_ERROR(pg_error(ctx));
-        goto cleanup2;
-    }
-
-    ret = pg_commit(ctx);
+    ret = pg_close_cursor(ctx, "sample_cursor");
     if (!ret)
     {
         PG_LOG_ERROR(pg_error(ctx));

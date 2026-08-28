@@ -5,7 +5,7 @@
  * @date    2026-08-01
  * @details
  *   - DECLARE CURSORでカーソルを作成します。
- *   - FETCH 10 で１０件ずつデータを取得します。
+ *   - FETCH 10 で10件ずつデータを取得します。
  */
 
 #include <stdio.h>
@@ -15,6 +15,8 @@
 #include "pg_file.h"
 
 #define USE_LOG_FILE 1
+
+const char *CONNECTION_STRING = "host=localhost dbname=test_database user=test_user password=testuser";
 
 int main()
 {
@@ -36,7 +38,7 @@ int main()
     PGresult *res = NULL;
     char *sql = NULL;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));

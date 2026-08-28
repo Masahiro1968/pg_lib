@@ -16,6 +16,8 @@
 
 #define USE_LOG_FILE 1
 
+const char *CONNECTION_STRING = "host=localhost dbname=test_database user=test_user password=testuser";
+
 int main(void)
 {
 #if (USE_LOG_FILE == 1)
@@ -35,7 +37,7 @@ int main(void)
     PGContext *ctx = NULL;
     char *sql1 = NULL;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));

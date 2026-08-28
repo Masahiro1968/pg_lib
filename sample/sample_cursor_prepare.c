@@ -3,7 +3,8 @@
  * @brief   PREPARE構文でSELECT文を作成し、10件ずつFETCHするサンプル
  * @author  Masahiro1968
  * @date    2026-08-01
- * @note    このサンプルは、複雑なSQL(pl/pgSQL)の実行できないパターンとして提供します。
+ * @note    このサンプルは、以下のSQL(pl/pgSQL)を実行できないパターンとして残します。
+ *          DECLARE cursor CURSOR FOR EXECUTE prepared_stmt(...)
  */
 
 #include <stdio.h>
@@ -14,6 +15,8 @@
 #include "pg_file.h"
 
 #define USE_LOG_FILE 1
+
+const char *CONNECTION_STRING = "host=localhost dbname=test_database user=test_user password=testuser";
 
 int main()
 {
@@ -35,7 +38,7 @@ int main()
     PGresult *res = NULL;
     char *sql = NULL;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));

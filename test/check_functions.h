@@ -6,6 +6,17 @@
 #define FAILURE -1
 #define SUCCESS 0
 
+int assert_false(bool cond, const char *msg)
+{
+    if (cond)
+    {
+        fprintf(stderr, "FAIL: %s\n", msg);
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
 int assert_true(bool cond, const char *msg)
 {
     if (!cond)

@@ -14,20 +14,6 @@
 
 static PGresult *pg_execute_internal(PGContext *ctx, const char *sql, ExecStatusType expect);
 
-bool pg_exec(PGContext *ctx, const char *sql)
-{
-    if (!ctx)
-        return false;
-
-    PGresult *res;
-    res = pg_execute_internal(ctx, sql, PGRES_COMMAND_OK);
-    if (!res)
-        return false;
-
-    PQclear(res);
-    return true;
-}
-
 bool pg_begin(PGContext *ctx)
 {
     return pg_exec(ctx, "BEGIN");
@@ -41,6 +27,20 @@ bool pg_commit(PGContext *ctx)
 bool pg_rollback(PGContext *ctx)
 {
     return pg_exec(ctx, "ROLLBACK");
+}
+
+bool pg_exec(PGContext *ctx, const char *sql)
+{
+    if (!ctx)
+        return false;
+
+    PGresult *res;
+    res = pg_execute_internal(ctx, sql, PGRES_COMMAND_OK);
+    if (!res)
+        return false;
+
+    PQclear(res);
+    return true;
 }
 
 PGresult *pg_query(PGContext *ctx, const char *sql)
@@ -63,13 +63,15 @@ PGStmt *pg_prepare(PGContext *ctx, const char *name, const char *sql)
     stmt->ctx = ctx;
     strncpy(stmt->name, name, sizeof(stmt->name) - 1);
     stmt->name[sizeof(stmt->name) - 1] = '\0';
+    strncpy(stmt->sql, sql, sizeof(stmt->sql) - 1);
+    stmt->sql[sizeof(stmt->sql) - 1] = '\0';
 
     PGresult *res = PQprepare(ctx->conn, name, sql, 0, NULL);
     if (!pg_ok(res))
     {
         pg_error_set(ctx, sql, NULL);
         PQclear(res);
-        free(stmt);
+        free(stmt); // prepareに失敗したので領域だけ開放する。
         return NULL;
     }
 
@@ -79,16 +81,33 @@ PGStmt *pg_prepare(PGContext *ctx, const char *name, const char *sql)
 
 PGresult *pg_execute(PGStmt *stmt, int nparams, const char **params)
 {
-    return PQexecPrepared(stmt->ctx->conn, stmt->name, nparams, params, NULL, NULL, 0);
+    if (!stmt)
+        return NULL;
+    
+    PGresult *res = PQexecPrepared(stmt->ctx->conn, stmt->name, nparams, params, NULL, NULL, 0);
+    if (!res)
+    {
+        pg_error_set(stmt->ctx, stmt->sql, NULL);
+        return NULL;
+    }
+
+    if (!pg_ok(res))
+    {
+        pg_error_set(stmt->ctx, stmt->sql, res);
+        PQclear(res);
+        return NULL;
+    }
+
+    return res;
 }
 
 void pg_stmt_free(PGStmt *stmt)
 {
     if (stmt == NULL)
         return;
-    
+
     char sql[256];
-    snprintf(sql, sizeof(sql),"DEALLOCATE \"%s\";", stmt->name);
+    snprintf(sql, sizeof(sql), "DEALLOCATE \"%s\";", stmt->name);
 
     if (!pg_exec(stmt->ctx, sql))
     {
@@ -102,14 +121,22 @@ bool pg_open_cursor(
     PGContext *ctx, const char *cursor_name, const char *sql,
     int nparams, const char **params)
 {
-    bool ret = true;
+    bool ret;
     char declare_sql[1024];
 
-    snprintf(
-        declare_sql, sizeof(declare_sql), "DECLARE %s CURSOR FOR %s", cursor_name, sql);
+    snprintf(declare_sql, sizeof(declare_sql), "DECLARE %s CURSOR FOR %s", cursor_name, sql);
 
-    PGresult *res = PQexecParams(
-        ctx->conn, declare_sql, nparams, NULL, params, NULL, NULL, 0);
+    ret = pg_begin(ctx);
+    if (!ret)
+        return ret;
+
+    PGresult *res = PQexecParams(ctx->conn, declare_sql, nparams, NULL, params, NULL, NULL, 0);
+    if (!res)
+    {
+        pg_error_set(ctx, sql, NULL);
+        return false;
+    }
+    
     ExecStatusType status = PQresultStatus(res);
     if (status != PGRES_COMMAND_OK)
     {
@@ -118,6 +145,28 @@ bool pg_open_cursor(
     }
 
     PQclear(res);
+    return ret;
+}
+
+PGresult *pg_read_cursor(PGContext *ctx, const char *cursor_name, int fetch_count)
+{
+    char fetch_sql[512];
+
+    snprintf(fetch_sql, sizeof(fetch_sql), "FETCH %d FROM %s", fetch_count, cursor_name);
+
+    return pg_query(ctx, fetch_sql);
+}
+
+bool pg_close_cursor(PGContext *ctx, const char *cursor_name)
+{
+    char close_sql[512];
+
+    snprintf(close_sql, sizeof(close_sql), "CLOSE %s", cursor_name);
+
+    bool ret = pg_exec(ctx, close_sql);
+    if (ret)
+        ret = pg_commit(ctx);
+    
     return ret;
 }
 

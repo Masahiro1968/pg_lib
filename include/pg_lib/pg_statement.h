@@ -17,8 +17,9 @@
  */
 typedef struct
 {
-    PGContext *ctx;  ///< PGContext情報
-    char name[64];   ///< ステートメント名
+    PGContext *ctx; ///< PGContext情報
+    char name[64];  ///< ステートメント名
+    char sql[512];  ///< SQL文
 } PGStmt;
 
 /**
@@ -57,9 +58,30 @@ void pg_stmt_free(PGStmt *stmt);
  * @return    実行結果
  * @retval    true 成功
  * @retval    false 失敗
+ * @details   カーソルオープンの前にトランザクションを開始します。
  */
 bool pg_open_cursor(
     PGContext *ctx, const char *cursor_name, const char *sql,
     int nparams, const char **params);
+
+/**
+ * @brief     オープンしたカーソルでデータを読み込みます。
+ * @param[in] ctx PGContext
+ * @param[in] cursor_name カーソル名
+ * @param[in] fetch_count fetch件数
+ * @return    PGresult
+ */
+PGresult *pg_read_cursor(PGContext *ctx, const char *cursor_name, int fetch_count);
+
+/**
+ * @brief     カーソルをクローズします。
+ * @param[in] ctx PGContext
+ * @param[in] cursor_name カーソル名
+ * @return    実行結果
+ * @retval    true 成功
+ * @retval    false 失敗
+ * @details   カーソルクローズの後にコミットを行います。
+ */
+bool pg_close_cursor(PGContext *ctx, const char *cursor_name);
 
 #endif

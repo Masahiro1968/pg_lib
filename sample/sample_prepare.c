@@ -17,6 +17,8 @@
 
 #define USE_LOG_FILE 1
 
+const char *CONNECTION_STRING = "host=localhost dbname=test_database user=test_user password=testuser";
+
 int main()
 {
 #if (USE_LOG_FILE == 1)
@@ -37,7 +39,7 @@ int main()
     PGresult *res = NULL;
     char *sql = NULL;
 
-    ctx = pg_connect("host=localhost dbname=testdb user=postgres password=postgres");
+    ctx = pg_connect(CONNECTION_STRING);
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
@@ -57,8 +59,14 @@ int main()
         goto cleanup;
     }
 
-    const char *param[] = {"10"};
+    const char *param[] = {"100" };
     res = pg_execute(stmt, 1, param);
+    if (!pg_ok(res))
+    {
+        PG_LOG_ERROR(pg_error(ctx));
+        goto cleanup;
+    }
+
     if (pg_rows(res) > 0 && pg_cols(res) > 0)
     {
         char line[4096] = "";

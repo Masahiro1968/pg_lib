@@ -19,7 +19,6 @@ static bool is_exist(const char *file_name)
     if (response != 0)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("stat failed for '%s', errno=%d (%s)", file_name, errno, error);
         return false;
     }
     return true;
@@ -29,7 +28,6 @@ bool is_exist_file(const char *file_name)
 {
     if (!file_name)
     {
-        PG_LOG_DEBUG("parameter 'file_name' is null");
         return false;
     }
 
@@ -38,7 +36,6 @@ bool is_exist_file(const char *file_name)
     if (response != 0)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("stat failed for '%s', errno=%d (%s)", file_name, errno, error);
         return false;
     }
     else
@@ -46,7 +43,6 @@ bool is_exist_file(const char *file_name)
         int res = S_ISREG(st.st_mode);
         if (!res)
         {
-            PG_LOG_DEBUG("%s is not a file.", file_name);
             return false;
         }
     }
@@ -58,17 +54,14 @@ bool is_exist_directory(const char *directory_name)
 {
     if (!directory_name)
     {
-        PG_LOG_DEBUG("parameter 'directory_name' is null");
         return false;
     }
 
     struct stat st;
     int response = stat(directory_name, &st);
-    PG_LOG_DEBUG("is_exist_directory(%s) response=%d", directory_name, response);
     if (response != 0)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("stat failed for '%s', errno=%d (%s)", directory_name, errno, error);
         return false;
     }
     else
@@ -76,7 +69,6 @@ bool is_exist_directory(const char *directory_name)
         int res = S_ISDIR(st.st_mode);
         if (!res)
         {
-            PG_LOG_DEBUG("%s is not a directory.", directory_name);
             return false;
         }
     }
@@ -88,13 +80,11 @@ bool remove_file(const char *file_name)
 {
     if (!file_name)
     {
-        PG_LOG_DEBUG("parameter 'file_name' is null");
         return false;
     }
 
     if (!is_exist_file(file_name))
     {
-        PG_LOG_DEBUG("%s is still removed.", file_name);
         return true;
     }
 
@@ -102,7 +92,6 @@ bool remove_file(const char *file_name)
     if (ret)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("failed to remove %s. errno=%d (%s)", file_name, errno, error);
         return false;
     }
 
@@ -113,13 +102,11 @@ bool remove_directory(const char *directory_name)
 {
     if (!directory_name)
     {
-        PG_LOG_DEBUG("parameter 'directory_name' is null");
         return false;
     }
 
     if (!is_exist_directory(directory_name))
     {
-        PG_LOG_DEBUG("%s is still removed.", directory_name);
         return true;
     }
 
@@ -133,8 +120,6 @@ bool remove_directory(const char *directory_name)
         if (ret == false)
         {
             char *error = strerror(errno);
-            PG_LOG_DEBUG("failed to remove %s. errno=%d (%s)",
-                         pg_string_get(file_path), errno, error);
             pg_string_free(file_path);
             pg_string_list_free(files);
             return false;
@@ -147,7 +132,6 @@ bool remove_directory(const char *directory_name)
     if (ret)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("failed to remove %s. errno=%d (%s)", directory_name, errno, error);
         return false;
     }
 
@@ -157,31 +141,18 @@ bool remove_directory(const char *directory_name)
 bool rename_file(const char *file_name, const char *new_file_name)
 {
     if (!file_name || !new_file_name)
-    {
-        if (!file_name)
-            PG_LOG_DEBUG("parameter 'file_name' is null");
-        if (!new_file_name)
-            PG_LOG_DEBUG("parameter 'new_file_name' is null");
         return false;
-    }
 
     if (!is_exist(file_name))
-    {
-        PG_LOG_DEBUG("%s is not exist.", file_name);
         return false;
-    }
 
     if (is_exist(new_file_name))
-    {
-        PG_LOG_DEBUG("%s is still exist.", new_file_name);
         return false;
-    }
 
     int ret = rename(file_name, new_file_name);
     if (ret)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("failed to rename file. errno=%d (%s)", errno, error);
         return false;
     }
 
@@ -191,32 +162,18 @@ bool rename_file(const char *file_name, const char *new_file_name)
 bool copy_file(const char *file_name, const char *target_file_name)
 {
     if (!file_name || !target_file_name)
-    {
-        if (!file_name)
-            PG_LOG_DEBUG("parameter 'file_name' is null");
-        if (!target_file_name)
-            PG_LOG_DEBUG("parameter 'target_file_name' is null");
         return false;
-    }
 
     if (!is_exist_file(file_name))
-    {
-        PG_LOG_DEBUG("%s is not exist.", file_name);
         return false;
-    }
 
     if (is_exist_file(target_file_name))
-    {
-        PG_LOG_DEBUG("%s is still exist.", target_file_name);
         return false;
-    }
 
     FILE *src = fopen(file_name, "rb");
     if (!src)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("failed to open file %s. errno=%d (%s)",
-                     file_name, errno, error);
         return false;
     }
 
@@ -224,8 +181,6 @@ bool copy_file(const char *file_name, const char *target_file_name)
     if (!dst)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("failed to open file %s. errno=%d (%s)",
-                     target_file_name, errno, error);
         fclose(src);
         return false;
     }
@@ -239,8 +194,6 @@ bool copy_file(const char *file_name, const char *target_file_name)
         if (fwrite(buffer, 1, bytes, dst) != bytes)
         {
             char *error = strerror(errno);
-            PG_LOG_DEBUG("failed to write file %s. errno=%d (%s)",
-                         target_file_name, errno, error);
             success = false;
             break;
         }
@@ -250,10 +203,7 @@ bool copy_file(const char *file_name, const char *target_file_name)
     fclose(dst);
 
     if (!success)
-    {
-        PG_LOG_DEBUG("remove partical file %s.", target_file_name);
         remove(target_file_name);
-    }
 
     return success;
 }
@@ -261,25 +211,13 @@ bool copy_file(const char *file_name, const char *target_file_name)
 bool move_file(const char *file_name, const char *target_file_name)
 {
     if (!file_name || !target_file_name)
-    {
-        if (!file_name)
-            PG_LOG_DEBUG("parameter 'file_name' is null");
-        if (!target_file_name)
-            PG_LOG_DEBUG("parameter 'target_file_name' is null");
         return false;
-    }
 
     if (!is_exist_file(file_name))
-    {
-        PG_LOG_DEBUG("%s is not exist.", file_name);
         return false;
-    }
 
     if (is_exist_file(target_file_name))
-    {
-        PG_LOG_DEBUG("%s is still exist.", target_file_name);
         return false;
-    }
 
     // 同一ファイルシステム内なら rename で一瞬で終わる
     if (rename_file(file_name, target_file_name))
@@ -299,23 +237,16 @@ bool move_file(const char *file_name, const char *target_file_name)
 bool create_directory(const char *directory_name)
 {
     if (!directory_name)
-    {
-        PG_LOG_DEBUG("parameter 'directory_name' is null");
         return false;
-    }
 
     if (is_exist_directory(directory_name))
-    {
-        PG_LOG_DEBUG("parameter %s is still exist", directory_name);
         return false;
-    }
 
     // 0755: 所有者は全権限、グループ・その他は読み取りと実行権限
     int ret = mkdir(directory_name, 0755);
     if (ret)
     {
         char *error = strerror(errno);
-        PG_LOG_DEBUG("failed to create directory. errno=%d (%s)", errno, error);
         return false;
     }
 
@@ -333,25 +264,13 @@ bool copy_directory(const char *directory_name, const char *target_directory_nam
 bool move_directory(const char *directory_name, const char *target_directory_name)
 {
     if (!directory_name || !target_directory_name)
-    {
-        if (!directory_name)
-            PG_LOG_DEBUG("parameter 'directory_name' is null");
-        if (!target_directory_name)
-            PG_LOG_DEBUG("parameter 'target_directory_name' is null");
         return false;
-    }
 
     if (!is_exist_directory(directory_name))
-    {
-        PG_LOG_DEBUG("%s is not exist.", directory_name);
         return false;
-    }
 
     if (is_exist_directory(target_directory_name))
-    {
-        PG_LOG_DEBUG("%s is still exist.", target_directory_name);
         return false;
-    }
 
     // 同一ファイルシステム間であれば rename でフォルダごと移動可能
     if (rename_file(directory_name, target_directory_name))
@@ -448,5 +367,24 @@ PGString *get_real_path(const char *path)
         }
     }
 
+    return response;
+}
+
+PGString *execute_command(const char *command)
+{
+    FILE *fp = popen(command, "r");
+    if (!fp)
+        return NULL;
+
+    char *buffer = calloc(512, sizeof(char));
+    fgets(buffer, 512, fp);
+    pclose(fp);
+
+    buffer[strcspn(buffer, "\n")] = '\0';
+
+    PGString *response = pg_string_new(512);
+    pg_string_set(response, buffer);
+    free(buffer);
+    
     return response;
 }
