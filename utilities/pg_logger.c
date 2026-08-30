@@ -7,6 +7,10 @@
  *   - ログに関する構造体や関数を集約します。
  */
 
+#define _DEFAULT_SOURCE
+
+#include <string.h>
+#include <stdlib.h>
 #include "pg_logger.h"
 
 static FILE *g_logger = NULL;
@@ -80,4 +84,48 @@ void pg_log(PGLogLevel level, const char *fmt, ...)
 
     fputc('\n', g_logger);
     fflush(g_logger);
+}
+
+void pg_log_memory(PGLogLevel level)
+{
+    FILE *fp = fopen("/proc/self/status", "r");
+    if (!fp)
+    {
+        return;
+    }
+
+    char line[256];
+
+    long vmpeak_kb = 0;
+    long vmsize_kb = 0;
+    long vmrss_kb = 0;
+
+    int checked = 0;
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (strncmp(line, "VmSize:", 7) == 0)
+        {
+            sscanf(line, "VmSize: %ld kB", &vmsize_kb);
+            checked++;
+        }
+        else if (strncmp(line, "VmRSS:", 6) == 0)
+        {
+            sscanf(line, "VmRSS: %ld kB", &vmrss_kb);
+            checked++;
+        }
+        else if (strncmp(line, "VmPeak:", 7) == 0)
+        {
+            sscanf(line, "VmPeak: %ld kB", &vmpeak_kb);
+            checked++;
+        }
+
+        if (checked == 3)
+            break;
+    }
+
+    pg_log(level, "VmPeak:%'ld MB, VmSize:%'ld MB, VmRSS:%'ld MB",
+           (vmpeak_kb / 1024), (vmsize_kb / 1024), (vmrss_kb / 1024));
+
+    fclose(fp);
 }

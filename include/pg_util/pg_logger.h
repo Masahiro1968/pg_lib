@@ -62,4 +62,10 @@ void pg_log(PGLogLevel level, const char *fmt, ...);
 /** @brief ERRORログを出力します。 */
 #define PG_LOG_ERROR(...) pg_log(PG_LEVEL_ERROR, __VA_ARGS__)
 
+/**
+ * @brief 現在のプロセスにおけるメモリ情報を出力します。
+ * @param[in] level 出力するログレベル
+ */
+void pg_log_memory(PGLogLevel level);
+
 #endif
