@@ -239,7 +239,7 @@ void print_usage(char *argv0)
 int main(int argc, char **argv)
 {
 #if (USE_LOG_FILE == 1)
-    const char *log_file = "./sample_make_data_2.log";
+    const char *log_file = "./sample_make_many_data.log";
     remove_file(log_file);
     FILE *fp = fopen(log_file, "w");
     pg_log_set_stream(fp);
@@ -250,7 +250,11 @@ int main(int argc, char **argv)
     if (argc == 1)
         print_usage(argv[0]);
 
-    PG_LOG_DEBUG("start main()");
+#ifdef DEBUG
+    pg_log_set_level(PG_LEVEL_DEBUG);
+#else
+    pg_log_set_level(PG_LEVEL_INFO);
+#endif
 
     char *host = NULL;
     char *port = NULL;
@@ -392,8 +396,7 @@ int main(int argc, char **argv)
             PG_LOG_INFO("OpenMP threads = %d", omp_get_num_threads());
         }
 
-        //#pragma omp for
-        #pragma omp single
+        #pragma omp for
         for (int i = 1; i <= num_of_tables; i++)
         {
             ret = create_dummy_data(connection_string, schema, i, num_of_records);

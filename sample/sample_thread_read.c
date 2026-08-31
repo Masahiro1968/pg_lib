@@ -25,7 +25,7 @@
 
 #define USE_LOG_FILE 1
 
-void dump_table_fetch(
+bool dump_table_fetch(
     const char *connection_string,
     const char *schema_name,
     const char *table_name,
@@ -40,7 +40,7 @@ void dump_table_fetch(
     int thread_no = omp_get_thread_num();
     PG_LOG_DEBUG("begin[%d] dump_table_fetch(%s)", thread_no, table_name);
 
-    bool ret;
+    bool response = false;
     char file_name[PATH_MAX];
 
     if (output)
@@ -52,13 +52,14 @@ void dump_table_fetch(
     if (fp == NULL)
     {
         PG_LOG_ERROR("failed fopen(%s)", file_name);
-        return;
+        return response;
     }
 
     PGContext *ctx = NULL;
     PGresult *res = NULL;
     char *sql = NULL;
     char *template = NULL;
+    bool ret;
 
     ctx = pg_connect(connection_string);
     if (!pg_connected(ctx))
@@ -90,16 +91,22 @@ void dump_table_fetch(
     else
     {
         bool field_name_out = false;
-        for(;;)
+        for (;;)
         {
             res = pg_read_cursor(ctx, "dump_cursor", 100);
-            if (!pg_ok(res) || pg_rows(res) == 0)
+            if (!pg_ok(res))
             {
+                PG_LOG_ERROR(pg_error(ctx));
                 pg_close_cursor(ctx, "dump_cursor");
+                goto cleanup2;
+            }
+            if (pg_rows(res) == 0)
+            {
                 PG_LOG_DEBUG("dump finished. %s", table_name);
+                pg_close_cursor(ctx, "dump_cursor");
                 break;
             }
-            
+
             if (need_field_name && !field_name_out)
             {
                 PGStringList *field_name_list = pg_get_field_names(res);
@@ -123,17 +130,18 @@ void dump_table_fetch(
         }
     }
 
+    response = true;
+
 cleanup2:
     pg_result_free(res);
 
 cleanup1:
     pg_disconnect(ctx);
-
     free(sql);
-
     fclose(fp);
-
     PG_LOG_DEBUG("end dump_table_fetch()");
+
+    return response;
 }
 
 void print_usage(char *argv0)
@@ -162,7 +170,11 @@ int main(int argc, char **argv)
     pg_log_set_stream(fp);
 #endif
 
+#ifdef DEBUG
     pg_log_set_level(PG_LEVEL_DEBUG);
+#else
+    pg_log_set_level(PG_LEVEL_INFO);
+#endif
 
     if (argc == 1)
         print_usage(argv[0]);
@@ -277,6 +289,10 @@ int main(int argc, char **argv)
             PG_LOG_DEBUG("search table %d:%s", i, table_names[i]);
         }
 
+        //
+        // You need to set environment variable "OMP_CANCELLATION=true"
+        // Then you can stop the error thread immediately.
+        //
         #pragma omp parallel
         {
             #pragma omp single
@@ -287,7 +303,7 @@ int main(int argc, char **argv)
             #pragma omp for schedule(dynamic, 1)
             for (int i = 0; i < table_count; i++)
             {
-                dump_table_fetch(
+                bool ret = dump_table_fetch(
                     pg_string_get(connection), // connection_string
                     schema,                    // schema_name
                     table_names[i],            // table_name
@@ -298,6 +314,13 @@ int main(int argc, char **argv)
                     "\n",                      // eol
                     true,                      // need_field_name
                     output);                   // output directory
+                if (!ret)
+                {
+                    PG_LOG_ERROR("failed dump_table_fetch()");
+                    #pragma omp cancel for
+                }
+
+                #pragma omp cancellation point for
             }
         }
 

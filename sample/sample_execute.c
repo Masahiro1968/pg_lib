@@ -69,7 +69,11 @@ int main(int argc, char **argv)
     pg_log_set_stream(fp);
 #endif
 
+#ifdef DEBUG
     pg_log_set_level(PG_LEVEL_DEBUG);
+#else
+    pg_log_set_level(PG_LEVEL_INFO);
+#endif
 
     PG_LOG_DEBUG("start main(%s)", argv[1]);
 

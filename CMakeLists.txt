@@ -74,6 +74,33 @@ file(GLOB PG_LIB_SOURCES
 )
 
 #
+# Build Configuration
+#
+add_compile_options(
+    $<$<CONFIG:Debug>:-g3>
+    $<$<CONFIG:Debug>:-O0>
+    $<$<CONFIG:Debug>:-DDEBUG>
+    $<$<CONFIG:Release>:-O3>
+    $<$<CONFIG:Release>:-DNDEBUG>
+)
+
+#
+# Sanitizer
+#
+if(PG_LIB_ENABLE_SANITIZER)
+
+    add_compile_options(
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+        $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+    )
+
+    add_link_options(
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+
+endif()
+
+#
 # Library
 #
 add_library(
@@ -118,31 +145,15 @@ if(PG_LIB_WERROR)
     )
 endif()
 
+#
+# OpenMP
+#
 if(PG_LIB_USE_OPENMP)
     find_package(OpenMP REQUIRED)
     target_compile_options(
         pg_lib
         PRIVATE
             -fopenmp
-    )
-endif()
-
-#
-# Debug
-#
-if(PG_LIB_ENABLE_SANITIZER)
-
-    add_compile_options(
-        $<$<CONFIG:Debug>:-g3>
-        $<$<CONFIG:Debug>:-O0>
-        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
-        $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
-        $<$<CONFIG:Release>:-O3>
-        $<$<CONFIG:Release>:-DNDEBUG>
-    )
-
-    add_link_options(
-        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
 
 endif()
@@ -211,7 +222,8 @@ if(PG_LIB_BUILD_SAMPLES)
         target_link_libraries(
             ${SAMPLE_NAME}
             PRIVATE
-                pg_lib pg_util
+                pg_lib
+                pg_util
         )
 
         if(PG_LIB_USE_OPENMP)
@@ -237,7 +249,11 @@ if(PG_LIB_BUILD_TESTING)
 
     foreach(SRC ${PG_TEST_SOURCES})
 
-        get_filename_component(TEST_NAME ${SRC} NAME_WE)
+        get_filename_component(
+            TEST_NAME
+            ${SRC}
+            NAME_WE
+        )
 
         add_executable(
             ${TEST_NAME}
@@ -254,7 +270,8 @@ if(PG_LIB_BUILD_TESTING)
         target_link_libraries(
             ${TEST_NAME}
             PRIVATE
-                pg_lib pg_util
+                pg_lib
+                pg_util
         )
 
         add_test(

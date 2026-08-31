@@ -20,7 +20,11 @@ int main(void)
     pg_log_set_stream(fp);
 #endif
 
+#ifdef DEBUG
     pg_log_set_level(PG_LEVEL_DEBUG);
+#else
+    pg_log_set_level(PG_LEVEL_INFO);
+#endif
 
     PG_LOG_DEBUG("start main()");
 
@@ -31,8 +35,8 @@ int main(void)
     /* pg_log_memory() */
     for (int i = 1; i <= 10; i++)
     {
-        char *buff = malloc(1000000 * i);
-        memset(buff, 0, 1000000 * i);
+        char *buff = malloc(100000 * i);
+        memset(buff, 0, 100000 * i);
         pg_log_memory(PG_LEVEL_INFO);
         free(buff);
         sleep(1);
