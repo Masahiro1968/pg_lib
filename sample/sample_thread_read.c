@@ -1,6 +1,6 @@
 /**
  * @file    sample_thread_read.c
- * @brief   マルチスレッド動作によるサンプル
+ * @brief   マルチスレッド動作によるCSV出力のサンプル
  * @author  Masahiro1968
  * @date    2026-08-01
  * @details
@@ -26,9 +26,9 @@
 #define USE_LOG_FILE 1
 
 bool dump_table_fetch(
-    const char *connection_string,
+    const PGString *connection_string,
     const char *schema_name,
-    const char *table_name,
+    const PGString *table_name,
     const char *delimiter,
     const char *blacket,
     const char *null_value,
@@ -38,20 +38,21 @@ bool dump_table_fetch(
     const char *output)
 {
     int thread_no = omp_get_thread_num();
-    PG_LOG_DEBUG("begin[%d] dump_table_fetch(%s)", thread_no, table_name);
+    PG_LOG_DEBUG("begin[%d] dump_table_fetch(%s)", thread_no, pg_string_get(table_name));
 
     bool response = false;
-    char file_name[PATH_MAX];
+    PGString *file_name = pg_string_new(PATH_MAX);
 
     if (output)
-        snprintf(file_name, sizeof(file_name), "%s/%s.csv", output, table_name);
+        pg_string_format(file_name, "%s/%s.csv", output, pg_string_get(table_name));
     else
-        snprintf(file_name, sizeof(file_name), "./%s.csv", table_name);
+        pg_string_format(file_name, "./%s.csv", pg_string_get(table_name));
 
-    FILE *fp = fopen(file_name, "w");
+    FILE *fp = fopen(pg_string_get(file_name), "w");
     if (fp == NULL)
     {
-        PG_LOG_ERROR("failed fopen(%s)", file_name);
+        PG_LOG_ERROR("failed fopen(%s)", pg_string_get(file_name));
+        pg_string_free(file_name);
         return response;
     }
 
@@ -61,7 +62,7 @@ bool dump_table_fetch(
     char *template = NULL;
     bool ret;
 
-    ctx = pg_connect(connection_string);
+    ctx = pg_connect(pg_string_get(connection_string));
     if (!pg_connected(ctx))
     {
         PG_LOG_ERROR(pg_error(ctx));
@@ -72,6 +73,7 @@ bool dump_table_fetch(
     sql = malloc(buffer_size);
 
     snprintf(sql, buffer_size, "SET search_path TO %s;", schema_name);
+    PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
     ret = pg_exec(ctx, sql);
     if (!ret)
     {
@@ -80,7 +82,7 @@ bool dump_table_fetch(
     }
 
     template = "SELECT * FROM %s;";
-    snprintf(sql, buffer_size, template, table_name);
+    snprintf(sql, buffer_size, template, pg_string_get(table_name));
     PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
     ret = pg_open_cursor(ctx, "dump_cursor", sql, 0, NULL);
     if (!ret)
@@ -102,7 +104,7 @@ bool dump_table_fetch(
             }
             if (pg_rows(res) == 0)
             {
-                PG_LOG_DEBUG("dump finished. %s", table_name);
+                PG_LOG_DEBUG("dump finished. %s", pg_string_get(table_name));
                 pg_close_cursor(ctx, "dump_cursor");
                 break;
             }
@@ -139,6 +141,7 @@ cleanup1:
     pg_disconnect(ctx);
     free(sql);
     fclose(fp);
+    pg_string_free(file_name);
     PG_LOG_DEBUG("end dump_table_fetch()");
 
     return response;
@@ -246,7 +249,7 @@ int main(int argc, char **argv)
     if (!is_exist_directory(output))
     {
         PG_LOG_ERROR("output '%s' is not exist.", output);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     PGString *connection = pg_string_new(PATH_MAX);
@@ -263,7 +266,6 @@ int main(int argc, char **argv)
 
     PGContext *ctx = NULL;
     PGresult *res = NULL;
-    char *sql = NULL;
 
     ctx = pg_connect(pg_string_get(connection));
     if (!pg_connected(ctx))
@@ -282,11 +284,13 @@ int main(int argc, char **argv)
     {
         int table_count = pg_rows(res);
         PG_LOG_DEBUG("table_count is %d", table_count);
-        char **table_names = calloc(table_count, sizeof(char *));
+        PGStringList *table_names = pg_string_list_new();
         for (int i = 0; i < table_count; i++)
         {
-            table_names[i] = strdup(pg_value(res, i, 0));
-            PG_LOG_DEBUG("search table %d:%s", i, table_names[i]);
+            PGString *table_name = pg_string_new(30);
+            pg_string_set(table_name, pg_value(res, i, 0));
+            PG_LOG_DEBUG("search table %d:%s", i, pg_string_get(table_name));
+            pg_string_list_add(table_names, table_name);
         }
 
         //
@@ -304,16 +308,16 @@ int main(int argc, char **argv)
             for (int i = 0; i < table_count; i++)
             {
                 bool ret = dump_table_fetch(
-                    pg_string_get(connection), // connection_string
-                    schema,                    // schema_name
-                    table_names[i],            // table_name
-                    ",",                       // delimiter
-                    "\"",                      // blacket
-                    "",                        // null_value
-                    false,                     // null_blacket
-                    "\n",                      // eol
-                    true,                      // need_field_name
-                    output);                   // output directory
+                    connection,                         // connection_string
+                    schema,                             // schema_name
+                    pg_string_list_get(table_names, i), // table_name
+                    ",",                                // delimiter
+                    "'",                                // blacket
+                    "",                                 // null_value
+                    false,                              // null_blacket
+                    "\n",                               // eol
+                    true,                               // need_field_name
+                    output);                            // output directory
                 if (!ret)
                 {
                     PG_LOG_ERROR("failed dump_table_fetch()");
@@ -324,11 +328,7 @@ int main(int argc, char **argv)
             }
         }
 
-        for (int i = 0; i < table_count; i++)
-        {
-            free(table_names[i]);
-        }
-        free(table_names);
+        pg_string_list_free(table_names);
     }
 
 cleanup2:
