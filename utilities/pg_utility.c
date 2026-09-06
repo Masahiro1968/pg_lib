@@ -60,7 +60,7 @@ PGresult *pg_tables(PGContext *ctx, const char *schema_name)
     return PQexec(ctx->conn, sql);
 }
 
-PGStringList *pg_get_row(PGresult *res, int row, const char *null_value)
+PGStringList *pg_get_row(PGresult *res, int row)
 {
     PGStringList *list = pg_string_list_new();
 
@@ -74,11 +74,7 @@ PGStringList *pg_get_row(PGresult *res, int row, const char *null_value)
             return NULL;
         }
 
-        if (pg_is_null(res, row, col) && null_value)
-        {
-            pg_string_set(str, null_value);
-        }
-        else
+        if (!pg_is_null(res, row, col))
         {
             pg_string_set(str, value);
         }
@@ -127,7 +123,7 @@ PGStringList *pg_get_field_names(PGresult *res)
     return list;
 }
 
-PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol, bool null_blacket)
+PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *bracket, const char *eol, bool null_bracket)
 {
     const int buffer_size = 1024;
     PGString *response = pg_string_new(buffer_size);
@@ -139,30 +135,26 @@ PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char
         PGString *temp = pg_string_new(buffer_size);
         if (col == 0)
         {
-            if (blacket == NULL)
-            {
+            if (bracket == NULL)
                 pg_string_format(temp, "%s", string);
-            }
             else
             {
                 if (string[0])
-                    pg_string_format(temp, "%s%s%s", blacket, string, blacket);
+                    pg_string_format(temp, "%s%s%s", bracket, string, bracket);
             }
         }
         else
         {
-            if (blacket == NULL)
-            {
+            if (bracket == NULL)
                 pg_string_format(temp, "%s%s", delimiter, string);
-            }
             else
             {
                 if (string[0])
-                    pg_string_format(temp, "%s%s%s%s", delimiter, blacket, string, blacket);
+                    pg_string_format(temp, "%s%s%s%s", delimiter, bracket, string, bracket);
                 else
                 {
-                    if (null_blacket)
-                        pg_string_format(temp, "%s%s%s", delimiter, blacket, blacket);
+                    if (null_bracket)
+                        pg_string_format(temp, "%s%s%s", delimiter, bracket, bracket);
                     else
                         pg_string_format(temp, "%s", delimiter);
                 }

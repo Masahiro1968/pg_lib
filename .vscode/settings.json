@@ -1,20 +1,22 @@
 {
+    "task.autoDetect": "off",
+    
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
     "C_Cpp.intelliSenseEngine": "default",
     
-    "editor.inlineSuggest.enabled": false,
+    "editor.inlineSuggest.enabled": true,
     "editor.quickSuggestions": {
-        "comments": "off",
-        "strings": "off",
-        "other": "off"
+        "comments": "on",
+        "strings": "on",
+        "other": "on"
     },
-    "editor.suggest.showWords": false,
-    "editor.suggest.showSnippets": false,
-    "editor.suggest.showInlineCompletions": false,
-    "editor.suggest.showSuggestions": false,
+    "editor.suggest.showWords": true,
+    "editor.suggest.showSnippets": true,
+    "editor.suggest.showInlineCompletions": true,
+    "editor.suggest.showSuggestions": true,
 
-    "github.copilot.editor.enableAutoCompletions": false,
-    "github.copilot.editor.enableCodeActions": false,
-    "github.copilot.nextEditSuggestions.enabled": false,
-    "github.copilot.renameSuggestions.triggerAutomatically": false
+    "github.copilot.editor.enableAutoCompletions": true,
+    "github.copilot.editor.enableCodeActions": true,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "github.copilot.renameSuggestions.triggerAutomatically": true
 }

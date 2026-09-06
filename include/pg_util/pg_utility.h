@@ -69,14 +69,12 @@ PGresult *pg_tables(PGContext *ctx, const char *schema_name);
  * @brief     テーブルから１行単位でデータを取得します。
  * @param[in] res PGresult
  * @param[in] row 行番号
- * @param[in] null_value データがNULLの場合の代替出力文字
  * @return    PGStringList
  * @retval    NULL 失敗
  * @retval    PGStringList 成功
  * @details   取得したPGStringListは、pg_string_list_free()で開放してください。
- * @details   NULLデータを""で表示する場合は、null_valueにNULLを設定してください。
  */
-PGStringList *pg_get_row(PGresult *res, int row, const char *null_value);
+PGStringList *pg_get_row(PGresult *res, int row);
 
 /**
  * @brief     テーブルからフィールド名一覧を取得します。
@@ -92,14 +90,14 @@ PGStringList *pg_get_field_names(PGresult *res);
  * @brief     データ一覧からブラケット、デリミタをつけて出力用データを作成します。
  * @param[in] row_data PGStringList
  * @param[in] delimiter データ単位のデリミタ文字
- * @param[in] blacket   データ単位の囲い文字
+ * @param[in] bracket   データ単位の囲い文字
  * @param[in] eol       行単位のデリミタ文字
- * @param[in] null_blacket NULLデータにブラケットを付けるか否か
+ * @param[in] null_bracket NULLデータにブラケットを付けるか否か
  * @return    PGString 行単位の文字列
- * @details   null_blacketをfalseにすると、,,, となり、<br>
+ * @details   null_bracketをfalseにすると、,,, となり、<br>
  *            trueにすると、"","","" という風になります。
  */
-PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *blacket, const char *eol, bool null_blacket);
+PGString *pg_make_data(PGStringList *row_data, const char *delimiter, const char *bracket, const char *eol, bool null_bracket);
 
 /**
  * @brief 接続文字列を作成します。

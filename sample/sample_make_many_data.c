@@ -95,7 +95,7 @@ bool create_dummy_data(
     }
 
     snprintf(sql, buffer_size, SQL_CREATE_TABLE, table_number);
-    PG_LOG_INFO("SQL=%s", sql);
+    PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
     ret = pg_exec(ctx, sql);
     if (!ret)
     {
@@ -104,7 +104,7 @@ bool create_dummy_data(
     }
 
     snprintf(sql, buffer_size, SQL_INSERT, table_number);
-    PG_LOG_INFO("SQL=%s", sql);
+    PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
     stmt = pg_prepare(ctx, "insert data", sql);
     if (!stmt)
     {
@@ -214,6 +214,8 @@ cleanup_t_1:
     pg_disconnect(ctx);
 
     free(sql);
+    
+    PG_LOG_DEBUG("end create_dummy_data()");
 
     return ret;
 }

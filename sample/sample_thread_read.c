@@ -30,9 +30,8 @@ bool dump_table_fetch(
     const char *schema_name,
     const PGString *table_name,
     const char *delimiter,
-    const char *blacket,
-    const char *null_value,
-    bool null_blacket,
+    const char *bracket,
+    bool null_bracket,
     const char *eol,
     bool need_field_name,
     const char *output)
@@ -112,7 +111,7 @@ bool dump_table_fetch(
             if (need_field_name && !field_name_out)
             {
                 PGStringList *field_name_list = pg_get_field_names(res);
-                PGString *field_names = pg_make_data(field_name_list, delimiter, blacket, eol, null_blacket);
+                PGString *field_names = pg_make_data(field_name_list, delimiter, bracket, eol, null_bracket);
                 fputs(pg_string_get(field_names), fp);
                 pg_string_free(field_names);
                 pg_string_list_free(field_name_list);
@@ -121,8 +120,8 @@ bool dump_table_fetch(
 
             for (int row = 0; row < pg_rows(res); row++)
             {
-                PGStringList *field_data_list = pg_get_row(res, row, null_value);
-                PGString *field_data = pg_make_data(field_data_list, delimiter, blacket, eol, null_blacket);
+                PGStringList *field_data_list = pg_get_row(res, row);
+                PGString *field_data = pg_make_data(field_data_list, delimiter, bracket, eol, null_bracket);
                 fputs(pg_string_get(field_data), fp);
                 pg_string_free(field_data);
                 pg_string_list_free(field_data_list);
@@ -293,10 +292,10 @@ int main(int argc, char **argv)
             pg_string_list_add(table_names, table_name);
         }
 
-        //
-        // You need to set environment variable "OMP_CANCELLATION=true"
-        // Then you can stop the error thread immediately.
-        //
+//
+// You need to set environment variable "OMP_CANCELLATION=true"
+// Then you can stop the error thread immediately.
+//
         #pragma omp parallel
         {
             #pragma omp single
@@ -312,11 +311,10 @@ int main(int argc, char **argv)
                     schema,                             // schema_name
                     pg_string_list_get(table_names, i), // table_name
                     ",",                                // delimiter
-                    "'",                                // blacket
-                    "",                                 // null_value
-                    false,                              // null_blacket
+                    "'",                                // bracket
+                    true,                               // null_bracket
                     "\n",                               // eol
-                    true,                               // need_field_name
+                    false,                              // need_field_name
                     output);                            // output directory
                 if (!ret)
                 {

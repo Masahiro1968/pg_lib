@@ -1,0 +1,94 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "テスト環境を作成(sample_executeD)",
+      "type": "shell",
+      "command": "./sample_executeD",
+      "args": [
+        "../sample/command_create_schema.sql"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "テストデータを作成(sample_make_many_dataD)",
+      "type": "shell",
+      "command": "./sample_make_many_dataD",
+      "args": [
+        "--host",
+        "localhost",
+        "--port",
+        "5432",
+        "--dbname",
+        "test_database",
+        "--schema",
+        "test_schema",
+        "--user",
+        "test_user",
+        "--pass",
+        "testuser",
+        "--tables",
+        "10",
+        "--records",
+        "100"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "テストデータを出力(sample_thread_readD)",
+      "type": "shell",
+      "command": "./sample_thread_readD",
+      "args": [
+        "--host",
+        "localhost",
+        "--port",
+        "5432",
+        "--dbname",
+        "test_database",
+        "--schema",
+        "test_schema",
+        "--user",
+        "test_user",
+        "--pass",
+        "testuser",
+        "--output",
+        "/tmp/data"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "テストデータを投入(sample_thread_copyD)",
+      "type": "shell",
+      "command": "./sample_thread_copyD",
+      "args": [
+        "--host",
+        "localhost",
+        "--port",
+        "5432",
+        "--dbname",
+        "test_database",
+        "--schema",
+        "test_schema",
+        "--user",
+        "test_user",
+        "--pass",
+        "testuser",
+        "--input",
+        "/tmp/data"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

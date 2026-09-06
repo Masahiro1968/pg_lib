@@ -83,7 +83,7 @@ PGresult *pg_execute(PGStmt *stmt, int nparams, const char **params)
 {
     if (!stmt)
         return NULL;
-    
+
     PGresult *res = PQexecPrepared(stmt->ctx->conn, stmt->name, nparams, params, NULL, NULL, 0);
     if (!res)
     {
@@ -136,7 +136,7 @@ bool pg_open_cursor(
         pg_error_set(ctx, sql, NULL);
         return false;
     }
-    
+
     ExecStatusType status = PQresultStatus(res);
     if (status != PGRES_COMMAND_OK)
     {
@@ -166,7 +166,7 @@ bool pg_close_cursor(PGContext *ctx, const char *cursor_name)
     bool ret = pg_exec(ctx, close_sql);
     if (ret)
         ret = pg_commit(ctx);
-    
+
     return ret;
 }
 

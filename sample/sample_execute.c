@@ -39,6 +39,10 @@ PGStringList *parse_sql_string(const char *file_name)
         {
             continue;
         }
+        else if (line[0] == '-' && line[1] == '-')
+        {
+            continue;
+        }
         else
         {
             pg_string_format(buffer, "%s ", line);

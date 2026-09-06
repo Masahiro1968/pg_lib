@@ -111,6 +111,7 @@ bool pg_rollback(PGContext *ctx);
  * @brief     SQL実行後の行数を取得します。
  * @param[in] res PGresult
  * @return    取得した行数
+ * @details   取得できなった場合は０を返します。
  */
 int pg_rows(PGresult *res);
 
@@ -118,6 +119,7 @@ int pg_rows(PGresult *res);
  * @brief     SQL実行後の列数を取得します。
  * @param[in] res PGresult
  * @return    取得した列数
+ * @details   取得できなった場合は０を返します。
  */
 int pg_cols(PGresult *res);
 

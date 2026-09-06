@@ -25,15 +25,16 @@ PGString *make_connection_string(
     const char *password,
     const char *service)
 {
-    const char *_hostname = hostname ? hostname : "localhost";
-    const char *_port = port ? port : "5432";
-    const char *_dbname = dbname ? dbname : "postgres";
-    const char *_user = user ? user : "postgres";
-    const char *_pass = password ? password : "postgres";
-    const char *_service = service ? service : NULL;
+    const char *my_hostname = hostname ? hostname : "localhost";
+    const char *my_port = port ? port : "5432";
+    const char *my_dbname = dbname ? dbname : "postgres";
+    const char *my_user = user ? user : "postgres";
+    const char *my_pass = password ? password : "postgres";
+    const char *my_service = service ? service : NULL;
 
     PGString *connection_string = pg_string_new(1024);
-    if (pg_build_connection_string(connection_string, _hostname, _port, _dbname, _user, _pass, _service))
+    if (pg_build_connection_string(
+            connection_string, my_hostname, my_port, my_dbname, my_user, my_pass, my_service))
     {
         return connection_string;
     }

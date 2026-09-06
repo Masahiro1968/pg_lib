@@ -133,6 +133,7 @@ bool move_directory(const char *directory_name, const char *target_directory_nam
  * @param[in] path 取得対象のパス
  * @param[in] is_file 取得対象がファイルならtrue, ディレクトリならfalse
  * @return    PGStringList ファイル一覧
+ * @retval    NULL 取得失敗
  */
 PGStringList *get_file_entry_list(const char *path, bool is_file);
 
@@ -140,6 +141,7 @@ PGStringList *get_file_entry_list(const char *path, bool is_file);
  * @brief     相対パスをrealpath()で絶対パスに変換します。
  * @param[in] path 相対パス
  * @return    PGString 変換した絶対パス
+ * @retval    NULL 取得失敗
  */
 PGString *get_real_path(const char *path);
 
@@ -147,7 +149,18 @@ PGString *get_real_path(const char *path);
  * @brief     Linuxコマンドを実行し、結果をPGStringに格納します。
  * @param[in] command Linuxコマンド
  * @return    PGString 実行結果
+ * @retval    NULL 取得失敗
  */
 PGString *execute_command(const char *command);
+
+/**
+ * @brief 行末を検知するまで、バッファを拡張して読み込みます。
+ * @param[in] fp FILE*
+ * @param[in] initial_size バッファの初期サイズ
+ * @param[in] keep_newline falseにすると、行末のCRやLFを除去します。
+ * @return    PGString 実行結果
+ * @retval    NULL 読み込み失敗
+ */
+PGString *read_line(FILE *fp, size_t initial_size, bool keep_newline);
 
 #endif

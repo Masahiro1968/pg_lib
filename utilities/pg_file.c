@@ -385,6 +385,67 @@ PGString *execute_command(const char *command)
     PGString *response = pg_string_new(512);
     pg_string_set(response, buffer);
     free(buffer);
-    
+
+    return response;
+}
+
+PGString *read_line(FILE *fp, size_t initial_size, bool keep_newline)
+{
+    if (!fp)
+        return NULL;
+
+    PGString *response = pg_string_new(initial_size);
+    if (!response)
+        return NULL;
+
+    while (1)
+    {
+        size_t available = response->capacity - response->size;
+        if (available <= 1)
+        {
+            // capacity * 2 が 0 になるケースに備え、最小サイズを保証
+            size_t new_capacity = response->capacity == 0 ? 16 : response->capacity * 2;
+            if (pg_string_reserve(response, new_capacity) != 0)
+            {
+                pg_string_free(response);
+                return NULL;
+            }
+
+            available = response->capacity - response->size;
+        }
+
+        if (!fgets(response->data + response->size, (int)available, fp))
+        {
+            if (response->size == 0)
+            {
+                pg_string_free(response);
+                return NULL;
+            }
+
+            break;
+        }
+
+        response->size = strlen(response->data);
+        if (response->size > 0 && response->data[response->size - 1] == '\n')
+        {
+            break;
+        }
+    }
+
+    // 改行文字の保持フラグが false の場合、末尾の改行を取り除く
+    if (!keep_newline && response->size > 0)
+    {
+        if (response->data[response->size - 1] == '\n')
+        {
+            response->size--;
+            // CRLF (Windows) の \r も合わせて除去したい場合
+            if (response->size > 0 && response->data[response->size - 1] == '\r')
+            {
+                response->size--;
+            }
+            response->data[response->size] = '\0';
+        }
+    }
+
     return response;
 }

@@ -39,6 +39,8 @@ PGStmt *pg_prepare(PGContext *ctx, const char *name, const char *sql);
  * @param[in] nparams パラメータの件数
  * @param[in] params  パラメータ
  * @return    PGresult
+ * @retval    NULL 失敗
+ * @retval    PGresult 成功
  */
 PGresult *pg_execute(PGStmt *stmt, int nparams, const char **params);
 
@@ -70,6 +72,8 @@ bool pg_open_cursor(
  * @param[in] cursor_name カーソル名
  * @param[in] fetch_count fetch件数
  * @return    PGresult
+ * @retval    NULL 失敗
+ * @retval    PGresult 成功
  */
 PGresult *pg_read_cursor(PGContext *ctx, const char *cursor_name, int fetch_count);
 

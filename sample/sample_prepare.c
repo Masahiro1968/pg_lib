@@ -63,7 +63,7 @@ int main()
         goto cleanup;
     }
 
-    const char *param[] = {"100" };
+    const char *param[] = {"100"};
     res = pg_execute(stmt, 1, param);
     if (!pg_ok(res))
     {

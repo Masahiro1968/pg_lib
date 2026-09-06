@@ -79,10 +79,10 @@ int main(void)
 
     PGString *file01 = pg_string_list_get(file_list, 0);
     rc |= assert_cmp("Sample01.txt", pg_string_get(file01), "get_file_entry_list(0)");
-    
+
     PGString *file02 = pg_string_list_get(file_list, 1);
     rc |= assert_cmp("Sample02.txt", pg_string_get(file02), "get_file_entry_list(1)");
-    
+
     pg_string_list_free(file_list);
 
     /* remove_directory() */
@@ -95,12 +95,45 @@ int main(void)
     PGString *check_path01 = get_real_path("/proc");
     rc |= assert_cmp("/proc", pg_string_get(check_path01), "get_real_path(/proc)");
     pg_string_free(check_path01);
-    
+
     PGString *check_path02 = get_real_path(".");
     PGString *expect02 = execute_command("pwd");
     rc |= assert_cmp(pg_string_get(expect02), pg_string_get(check_path02), "get_real_path(.)");
     pg_string_free(expect02);
     pg_string_free(check_path02);
+
+    /* read_line() */
+    fp = fopen("./read_file_test.txt", "w");
+    if (!fp)
+    {
+        fprintf(stderr, "Failed to create file 'read_file_test.txt");
+        return FAILURE;
+    }
+
+    const char *data = "---------1---------2---------3---------4---------5---------6\r\n";
+    const char *expect = "---------1---------2---------3---------4---------5---------6";
+    for (int i = 0; i < 10; i++)
+    {
+        fputs(data, fp);
+    }
+
+    fclose(fp);
+
+    fp = fopen("./read_file_test.txt", "r");
+    if (!fp)
+    {
+        fprintf(stderr, "Failed to open file 'read_file_test.txt");
+        return FAILURE;
+    }
+
+    PGString *line;
+    while (line = read_line(fp, 16, false))
+    {
+        rc |= assert_cmp(expect, pg_string_get(line), "read_line()");
+        pg_string_free(line);
+    }
+
+    fclose(fp);
 
     return rc;
 }

@@ -29,8 +29,7 @@ bool copy_table(
     const PGString *connection_string,
     const char *schema_name,
     const PGString *file_name,
-    const char *directory
-)
+    const char *directory)
 {
     int thread_no = omp_get_thread_num();
     PG_LOG_DEBUG("begin[%d] copy_table(%s)", thread_no, pg_string_get(file_name));
@@ -81,8 +80,12 @@ bool copy_table(
         goto cleanup1;
     }
 
-    template = "COPY %s FROM '%s' WITH ( FORMAT csv, HEADER false, QUOTE '''' );";
-    snprintf(sql, buffer_size, template, pg_string_get(table_name), pg_string_get(file_path));
+#if RUN_WITH_COPY_COMMAND
+    PGString *abstract_path = get_real_path(pg_string_get(file_path));
+    // template = "COPY %s FROM '%s' WITH ( FORMAT csv, HEADER true, QUOTE '''' , NULL '');";
+    template = "COPY %s FROM '%s' WITH ( FORMAT csv, HEADER true, QUOTE '\"');";
+    snprintf(sql, buffer_size, template, pg_string_get(table_name), pg_string_get(abstract_path));
+    pg_string_free(abstract_path);
     PG_LOG_INFO("SQL[%d]=%s", thread_no, sql);
     ret = pg_exec(ctx, sql);
     if (!ret)
@@ -90,6 +93,40 @@ bool copy_table(
         PG_LOG_ERROR(pg_error(ctx));
         goto cleanup1;
     }
+#else
+    FILE *fp = fopen(pg_string_get(file_path), "r");
+    if (!fp)
+    {
+        PG_LOG_ERROR("Failed to open file %s.", pg_string_get(file_path));
+        goto cleanup1;
+    }
+
+    PGString *line;
+    while (line = read_line(fp, 1024, false))
+    {
+        PGString *insert_sql = pg_string_new(pg_string_size(line) + 20);
+        pg_string_format(insert_sql, "INSERT INTO %s VALUES(%s);", pg_string_get(table_name), pg_string_get(line));
+        while (1)
+        {
+            int ret = pg_string_replace(insert_sql, "''", "NULL");
+            if (ret < 0)
+                break;
+        }
+        PG_LOG_INFO("SQL[%d]=%s", thread_no, pg_string_get(insert_sql));
+        ret = pg_exec(ctx, pg_string_get(insert_sql));
+        if (!ret)
+        {
+            PG_LOG_ERROR(pg_error(ctx));
+            pg_string_free(line);
+            pg_string_free(insert_sql);
+            goto cleanup1;
+        }
+        pg_string_free(line);
+        pg_string_free(insert_sql);
+    }
+
+    fclose(fp);
+#endif
 
     response = true;
 
@@ -217,7 +254,7 @@ int main(int argc, char **argv)
 
     int num_of_files = pg_string_list_size(file_list);
     PG_LOG_DEBUG("num of files are %d", num_of_files);
-    for(int i = 0; i < num_of_files; i++)
+    for (int i = 0; i < num_of_files; i++)
     {
         PGString *file_name = pg_string_list_get(file_list, i);
         PG_LOG_DEBUG("target file:%s", pg_string_get(file_name));
@@ -235,18 +272,18 @@ int main(int argc, char **argv)
 
     pg_init();
 
-    //
-    // You need to set environment variable "OMP_CANCELLATION=true"
-    // Then you can stop the error thread immediately.
-    //
-    #pragma omp parallel
+//
+// You need to set environment variable "OMP_CANCELLATION=true"
+// Then you can stop the error thread immediately.
+//
+#pragma omp parallel
     {
-        #pragma omp single
+#pragma omp single
         {
             PG_LOG_INFO("OpenMP threads = %d", omp_get_num_threads());
         }
 
-        #pragma omp for schedule(dynamic, 1)
+#pragma omp for schedule(dynamic, 1)
         for (int i = 0; i < num_of_files; i++)
         {
             PGString *file_name = pg_string_list_get(file_list, i);
@@ -258,10 +295,10 @@ int main(int argc, char **argv)
             if (!ret)
             {
                 PG_LOG_ERROR("failed copy_table(%s)", pg_string_get(file_name));
-                #pragma omp cancel for
+#pragma omp cancel for
             }
 
-            #pragma omp cancellation point for
+#pragma omp cancellation point for
         }
     }
 
