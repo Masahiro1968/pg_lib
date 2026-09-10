@@ -292,10 +292,10 @@ int main(int argc, char **argv)
             pg_string_list_add(table_names, table_name);
         }
 
-//
-// You need to set environment variable "OMP_CANCELLATION=true"
-// Then you can stop the error thread immediately.
-//
+        //
+        // You need to set environment variable "OMP_CANCELLATION=true"
+        // Then you can stop the error thread immediately.
+        //
         #pragma omp parallel
         {
             #pragma omp single

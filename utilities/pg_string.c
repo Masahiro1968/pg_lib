@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include "pg_string.h"
 
 PGString *pg_string_new(size_t size)
@@ -263,6 +264,35 @@ int pg_string_find(PGString *string, const char *needle)
         return -1;
 
     return (int)(p - string->data);
+}
+
+bool pg_string_starts_with(const PGString *string, const char *prefix)
+{
+    if (!string || !prefix)
+        return false;
+
+    size_t prefix_len = strlen(prefix);
+
+    if (string->size < prefix_len)
+        return false;
+
+    return memcmp(string->data, prefix, prefix_len) == 0;
+}
+
+bool pg_string_ends_with(const PGString *string, const char *suffix)
+{
+    if (!string || !suffix)
+        return false;
+
+    size_t suffix_len = strlen(suffix);
+
+    if (string->size < suffix_len)
+        return false;
+
+    return memcmp(
+               string->data + string->size - suffix_len,
+               suffix,
+               suffix_len) == 0;
 }
 
 int pg_string_replace(PGString *string, const char *from, const char *to)

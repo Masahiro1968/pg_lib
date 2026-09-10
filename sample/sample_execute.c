@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "pg_lib.h"
 #include "pg_type.h"
 #include "pg_logger.h"
@@ -88,7 +89,14 @@ int main(int argc, char **argv)
     char *sql = NULL;
     bool ret;
 
+    if (!is_exist_file(argv[1]))
+    {
+        PG_LOG_ERROR("File not found: %s", argv[1]);
+        return EXIT_FAILURE;
+    }
+
     PGStringList *commands = parse_sql_string(argv[1]);
+
     for (int i = 0; i < pg_string_list_size(commands); i++)
     {
         PGString *line = pg_string_list_get(commands, i);

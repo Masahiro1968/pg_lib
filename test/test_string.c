@@ -267,6 +267,36 @@ int string_test_09()
     return ret;
 }
 
+int string_test_10()
+{
+    int ret = 0;
+    bool result = false;
+
+    PGString *match1 = pg_string_new(12);
+    pg_string_set(match1, "0123456789");
+    
+    result = pg_string_starts_with(match1, "0123");
+    ret |= assert_value(true, result, "pg_string_starts_with(true) #1");
+    
+    result = pg_string_ends_with(match1, "6789");
+    ret |= assert_value(true, result, "pg_string_ends_with(true) #1");
+
+    pg_string_free(match1);
+
+    PGString *match2 = pg_string_new(12);
+    pg_string_set(match2, "1234567890");
+    
+    result = pg_string_starts_with(match2, "0123");
+    ret |= assert_value(false, result, "pg_string_starts_with(true) #2");
+    
+    result = pg_string_ends_with(match2, "6789");
+    ret |= assert_value(false, result, "pg_string_ends_with(true) #2");
+
+    pg_string_free(match2);
+    
+    return ret;
+}
+
 int main(void)
 {
     int rc = 0;
@@ -280,6 +310,7 @@ int main(void)
     rc |= assert_value(SUCCESS, string_test_07(), "string_test_07");
     rc |= assert_value(SUCCESS, string_test_08(), "string_test_08");
     rc |= assert_value(SUCCESS, string_test_09(), "string_test_09");
+    rc |= assert_value(SUCCESS, string_test_10(), "string_test_10");
 
     return rc;
 }

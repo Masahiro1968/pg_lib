@@ -151,6 +151,26 @@ void pg_string_list_free(PGStringList *list);
 int pg_string_find(PGString *string, const char *needle);
 
 /**
+ * @brief     文字列情報が指定の文字列で始まるかを判定します。
+ * @param[in] string PGString 判定する対象
+ * @param[in] prefix 判定する文字列
+ * @return    判定結果
+ * @retval    true 指定の文字列で始まる
+ * @retval    false 指定の文字列で始まらない
+ */
+bool pg_string_starts_with(const PGString *string, const char *prefix);
+
+/**
+ * @brief     文字列情報が指定の文字列で終わるかを判定します。
+ * @param[in] string PGString 判定する対象
+ * @param[in] suffix 判定する文字列
+ * @return    判定結果
+ * @retval    true 指定の文字列で終わる
+ * @retval    false 指定の文字列で終わらない
+ */
+bool pg_string_ends_with(const PGString *string, const char *suffix);
+
+/**
  * @brief         文字列情報から文字列を置換します。
  * @param[in,out] string PGString 文字列を置換する対象
  * @param[in]     from 検索文字列

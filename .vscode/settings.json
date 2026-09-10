@@ -18,5 +18,6 @@
     "github.copilot.editor.enableAutoCompletions": true,
     "github.copilot.editor.enableCodeActions": true,
     "github.copilot.nextEditSuggestions.enabled": true,
-    "github.copilot.renameSuggestions.triggerAutomatically": true
+    "github.copilot.renameSuggestions.triggerAutomatically": true,
+    "livePreview.defaultPreviewPath": "/docs/html/index.html"
 }
